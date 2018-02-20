@@ -60,10 +60,11 @@ class AbstractPoppyCreature(Robot):
         .. warning:: You can not specify a particular config when using a simulated robot!
 
         """
+        """
         if config and simulator:
             raise ValueError('Cannot set a specific config '
                              'when using a simulated version!')
-
+        """
         creature = camelcase_to_underscore(cls.__name__)
         base_path = (os.path.dirname(__import__(creature).__file__)
                      if base_path is None else base_path)

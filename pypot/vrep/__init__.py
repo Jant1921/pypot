@@ -12,7 +12,7 @@ from .controller import VrepCollisionTracker, VrepCollisionDetector
 
 from ..robot import Robot
 from ..robot.sensor import ObjectTracker
-from ..robot.config import motor_from_confignode, make_alias
+from ..robot.config import motor_from_confignode, sensor_from_confignode, make_alias
 
 
 import pypot.utils.pypot_time as pypot_time
@@ -110,6 +110,16 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
 
     robot = Robot(motor_controllers=[vc],
                   sensor_controllers=sensor_controllers)
+
+    if 'sensors' in config:
+        config_sensors = []
+        for s_name in config['sensors'].keys():
+            sensor = sensor_from_confignode(config, s_name, robot, vrep_io)
+            if sensor is not None:
+                setattr(robot, s_name, sensor)
+                config_sensors.append(sensor)
+                robot.sensors.append(sensor)
+        [s.start() for s in config_sensors if hasattr(s, 'start')]
 
     for m in robot.motors:
         m.goto_behavior = 'minjerk'

@@ -229,6 +229,14 @@ class VrepIO(AbstractIO):
         except VrepIOErrors:
             return 0.0
 
+    def get_vision_sensor_image(self, vision_sensor_handler, **kvargs):
+        """ Gets the resolution of the image and the image from a vision sensor"""
+        image = None, None
+        try:
+            image = self.call_remote_api('simxGetVisionSensorImage', vision_sensor_handler, 0, **kvargs)
+        finally:
+            return image
+
     def add_cube(self, name, position, sizes, mass):
         """ Add Cube """
         self._create_pure_shape(0, 239, sizes, mass, [0, 0])

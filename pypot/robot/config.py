@@ -95,9 +95,10 @@ def from_config(config, strict=True, sync=True, use_dummy_io=False, **extra):
                     config['sensors'][s_name]['type'] = 'Dummy{}'.format(s_name.capitalize())
 
                 sensor = sensor_from_confignode(config, s_name, robot)
-                setattr(robot, s_name, sensor)
-                sensors.append(sensor)
-                robot.sensors.append(sensor)
+                if sensor is not None:
+                    setattr(robot, s_name, sensor)
+                    sensors.append(sensor)
+                    robot.sensors.append(sensor)
 
             [s.start() for s in sensors if hasattr(s, 'start')]
 
@@ -149,7 +150,7 @@ def motor_from_confignode(config, motor_name):
     return m
 
 
-def sensor_from_confignode(config, s_name, robot):
+def sensor_from_confignode(config, s_name, robot, vrep_io=None):
     args = config['sensors'][s_name]
     cls_name = args.pop("type")
 
@@ -157,8 +158,14 @@ def sensor_from_confignode(config, s_name, robot):
         args['robot'] = robot
 
     SensorCls = getattr(pypot.sensor, cls_name)
+    if hasattr(SensorCls, 'simulator_only'):
+        if vrep_io is not None:
+            args['vrep_io'] = vrep_io
+        else:
+            return None
     return SensorCls(name=s_name, **args)
-
+    #else:
+    #    return SensorCls(name=s_name, vrep_io,  **args)
 
 def dxl_io_from_confignode(config, c_params, ids, strict):
     port = c_params['port']
