@@ -23,6 +23,7 @@ vrep_mode = {
     'normal': remote_api.simx_opmode_oneshot_wait,
     'streaming': remote_api.simx_opmode_streaming,
     'sending': remote_api.simx_opmode_oneshot,
+    'buffer': remote_api.simx_opmode_buffer,
 }
 
 
@@ -361,11 +362,10 @@ class VrepIO(AbstractIO):
         return res
 
     def _extract_mode(self, kwargs):
-        for mode in ('streaming', 'sending'):
+        for mode in vrep_mode:
             if mode in kwargs:
                 kwargs.pop(mode)
                 return mode
-
         return 'normal'
 
 
