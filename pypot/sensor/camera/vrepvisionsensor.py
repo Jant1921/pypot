@@ -19,7 +19,6 @@ class VrepVisionSensor(AbstractCamera):
         AbstractCamera.__init__(self, name, self._res, fps)
 
     def post_processing(self, image):
-        print self.name
         if image is None:
             return None
         image = np.array(image, dtype=np.uint8)
