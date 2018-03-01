@@ -154,6 +154,7 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
 
         vc.stop()
         vrep_io.stop_simulation()
+        robot.close()
 
     def reset_simu():
         stop_simu()
