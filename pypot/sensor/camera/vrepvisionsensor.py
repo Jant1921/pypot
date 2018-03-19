@@ -15,10 +15,15 @@ class VrepVisionSensor(AbstractCamera):
 
         def get_vision_sensor_image():
             return vrep_io.get_vision_sensor_image(vision_sensor_handler, buffer=True)
+
         self._grab = get_vision_sensor_image
         AbstractCamera.__init__(self, name, self._res, fps)
 
     def post_processing(self, image):
+        """ v-rep image post processing
+        :param array image: unidimensional array image data from vision sensor
+        :returns formatted image as array of RGB values
+        """
         if image is None:
             return None
         image = np.array(image, dtype=np.uint8)
