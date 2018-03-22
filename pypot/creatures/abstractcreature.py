@@ -34,7 +34,7 @@ class AbstractPoppyCreature(Robot):
                 use_http=False, http_host='0.0.0.0', http_port=8080, http_quiet=True,
                 use_remote=False, remote_host='0.0.0.0', remote_port=4242,
                 use_ws=False, ws_host='0.0.0.0', ws_port=9009,
-                start_background_services=True, sync=True,
+                start_background_services=True, sync=True, synchronous=False,
                 **extra):
         """ Poppy Creature Factory.
 
@@ -98,7 +98,7 @@ class AbstractPoppyCreature(Robot):
                     host = '127.0.0.1'
 
                 try:
-                    poppy_creature = from_vrep(config, host, port, scene if scene != "keep-existing" else None)
+                    poppy_creature = from_vrep(config, host, port, scene if scene != "keep-existing" else None, synchronous=synchronous)
                 except VrepConnectionError:
                     raise IOError('Connection to V-REP failed!')
 

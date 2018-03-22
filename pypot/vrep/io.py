@@ -24,6 +24,7 @@ vrep_mode = {
     'streaming': remote_api.simx_opmode_streaming,
     'sending': remote_api.simx_opmode_oneshot,
     'buffer': remote_api.simx_opmode_buffer,
+    'blocking': remote_api.simx_opmode_blocking
 }
 
 
@@ -37,7 +38,7 @@ class VrepIO(AbstractIO):
     MAX_ITER = 5
     TIMEOUT = 0.4
 
-    def __init__(self, vrep_host='127.0.0.1', vrep_port=19997, scene=None, start=False):
+    def __init__(self, vrep_host='127.0.0.1', vrep_port=19997, scene=None, start=False, synchronous=False):
         """ Starts the connection with the V-REP remote API server.
 
         :param str vrep_host: V-REP remote API server host
@@ -55,6 +56,8 @@ class VrepIO(AbstractIO):
         self.vrep_port = vrep_port
         self.scene = scene
         self.start = start
+        self._synchronous = synchronous
+        self._simulation_mode = vrep_mode['blocking'] if synchronous else vrep_mode['normal']
 
         # self.client_id = remote_api.simxStart(
         #     vrep_host, vrep_port, True, True, 5000, 5)
@@ -115,8 +118,9 @@ class VrepIO(AbstractIO):
 
             .. warning:: if you start the simulation just after stopping it, the simulation will likely not be started. Use :meth:`~pypot.vrep.io.VrepIO.restart_simulation` instead.
         """
-        self.call_remote_api('simxStartSimulation')
-
+        # TODO remote_api.simxStartSimulation
+        remote_api.simxStartSimulation(self.client_id, self._simulation_mode)
+        remote_api.simxSynchronous(self.client_id, self._synchronous)
         # We have to force a sleep
         # Otherwise it may causes troubles??
         time.sleep(0.5)
@@ -131,7 +135,9 @@ class VrepIO(AbstractIO):
 
     def stop_simulation(self):
         """ Stops the simulation. """
-        self.call_remote_api('simxStopSimulation')
+        # TODO
+        remote_api.simxStopSimulation(self.client_id, self._simulation_mode)
+        # self.call_remote_api('simxStopSimulation')
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -140,6 +146,10 @@ class VrepIO(AbstractIO):
     def resume_simulation(self):
         """ Resumes the simulation. """
         self.start_simulation()
+
+    def next_simulation_step(self):
+        """ Executes the next simulation step when synchronous mode is enabled """
+        remote_api.simxSynchronousTrigger(self.client_id)
 
     def get_motor_position(self, motor_name):
         """ Gets the motor current position. """

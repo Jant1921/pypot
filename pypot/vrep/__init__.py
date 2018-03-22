@@ -50,7 +50,7 @@ class vrep_time():
 
 
 def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
-              tracked_objects=[], tracked_collisions=[]):
+              tracked_objects=[], tracked_collisions=[], synchronous=False):
     """ Create a robot from a V-REP instance.
 
     :param config: robot configuration (either the path to the json or directly the dictionary)
@@ -80,7 +80,7 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
             simulated_robot = from_vrep(config, '127.0.0.1', 19997, 'poppy.ttt')
 
     """
-    vrep_io = VrepIO(vrep_host, vrep_port)
+    vrep_io = VrepIO(vrep_host, vrep_port, synchronous=synchronous)
 
     vreptime = vrep_time(vrep_io)
     pypot_time.time = vreptime.get_time
@@ -161,9 +161,13 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         sys_time.sleep(0.5)
         start_simu()
 
+    def next_simulation_step():
+        vrep_io.next_simulation_step()
+
     robot.start_simulation = start_simu
     robot.stop_simulation = stop_simu
     robot.reset_simulation = reset_simu
+    robot.next_simulation_step = next_simulation_step
 
     def current_simulation_time(robot):
         return robot._controllers[0].io.get_simulation_current_time()
