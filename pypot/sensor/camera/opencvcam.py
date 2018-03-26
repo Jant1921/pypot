@@ -23,8 +23,10 @@ class OpenCVCamera(AbstractCamera):
         return self._index
 
     def grab(self):
+        """v-rep image grab
+        :returns formatted image as array of BGR values
+        """
         rval, frame = self.capture.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if not rval:
             raise EnvironmentError('Can not grab image from the camera!')
         return frame
