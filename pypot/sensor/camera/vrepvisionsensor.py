@@ -1,5 +1,6 @@
 from .abstractcam import AbstractCamera
 import numpy as np
+import cv2
 
 
 class VrepVisionSensor(AbstractCamera):
@@ -19,19 +20,16 @@ class VrepVisionSensor(AbstractCamera):
         self._grab = get_vision_sensor_image
         AbstractCamera.__init__(self, name, self._res, fps)
 
-    def post_processing(self, image):
-        """ v-rep image post processing
-        :param array image: unidimensional array image data from vision sensor
-        :returns formatted image as array of RGB values
+    def grab(self):
+        """v-rep image grab
+        :returns formatted image as array of BGR values
         """
+        self._res, image = self._grab()
         if image is None:
             return None
         image = np.array(image, dtype=np.uint8)
         image.resize([self._res[0], self._res[1], 3])
         image = np.rot90(image, 2)
         image = np.fliplr(image)
-        return image
-
-    def grab(self):
-        self._res, image = self._grab()
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         return image
