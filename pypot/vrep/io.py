@@ -118,7 +118,6 @@ class VrepIO(AbstractIO):
 
             .. warning:: if you start the simulation just after stopping it, the simulation will likely not be started. Use :meth:`~pypot.vrep.io.VrepIO.restart_simulation` instead.
         """
-        # TODO remote_api.simxStartSimulation
         remote_api.simxStartSimulation(self.client_id, self._simulation_mode)
         remote_api.simxSynchronous(self.client_id, self._synchronous)
         # We have to force a sleep
@@ -132,6 +131,12 @@ class VrepIO(AbstractIO):
         # Otherwise the simulation is not restarted
         time.sleep(0.5)
         self.start_simulation()
+
+    def pause_simulation(self):
+        remote_api.simxPauseSimulation(self.client_id, vrep_mode['sending'])
+
+    def resume_simulation(self):
+        remote_api.simxStartSimulation(self.client_id, self._simulation_mode)
 
     def stop_simulation(self):
         """ Stops the simulation. """
