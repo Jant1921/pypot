@@ -118,7 +118,6 @@ class VrepIO(AbstractIO):
 
             .. warning:: if you start the simulation just after stopping it, the simulation will likely not be started. Use :meth:`~pypot.vrep.io.VrepIO.restart_simulation` instead.
         """
-        # TODO remote_api.simxStartSimulation
         remote_api.simxStartSimulation(self.client_id, self._simulation_mode)
         remote_api.simxSynchronous(self.client_id, self._synchronous)
         # We have to force a sleep
@@ -133,11 +132,15 @@ class VrepIO(AbstractIO):
         time.sleep(0.5)
         self.start_simulation()
 
+    def pause_simulation(self):
+        remote_api.simxPauseSimulation(self.client_id, vrep_mode['sending'])
+
+    def resume_simulation(self):
+        remote_api.simxStartSimulation(self.client_id, self._simulation_mode)
+
     def stop_simulation(self):
         """ Stops the simulation. """
-        # TODO
-        remote_api.simxStopSimulation(self.client_id, self._simulation_mode)
-        # self.call_remote_api('simxStopSimulation')
+        remote_api.simxStopSimulation(self.client_id, vrep_mode['sending'])
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -146,6 +149,10 @@ class VrepIO(AbstractIO):
     def resume_simulation(self):
         """ Resumes the simulation. """
         self.start_simulation()
+
+    def close_scene(self):
+        clos = remote_api.simxCloseScene(self.client_id, vrep_mode['blocking'])
+        return clos
 
     def next_simulation_step(self):
         """ Executes the next simulation step when synchronous mode is enabled """

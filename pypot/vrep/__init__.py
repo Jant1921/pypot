@@ -145,6 +145,9 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         while vrep_io.get_simulation_current_time() < 1.:
             sys_time.sleep(0.1)
 
+    def pause_simu():
+        vrep_io
+
     def stop_simu():
         if tracked_objects:
             vot.stop()
@@ -154,19 +157,29 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
 
         vc.stop()
         vrep_io.stop_simulation()
-        robot.close()
 
     def reset_simu():
         stop_simu()
         sys_time.sleep(0.5)
         start_simu()
 
+    def stop_and_close():
+        robot.stop_sync()
+        stop_simu()
+        sys_time.sleep(0.5)
+        vrep_io.close_scene()
+        robot.close()
+        close_all_connections()
+
     def next_simulation_step():
         vrep_io.next_simulation_step()
 
     robot.start_simulation = start_simu
     robot.stop_simulation = stop_simu
+    robot.pause_simulation = vrep_io.pause_simulation
+    robot.resume_simulation = vrep_io.start_simulation
     robot.reset_simulation = reset_simu
+    robot.stop_and_close_simulation = stop_and_close
     robot.next_simulation_step = next_simulation_step
 
     def current_simulation_time(robot):
