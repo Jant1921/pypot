@@ -135,9 +135,7 @@ class VrepIO(AbstractIO):
 
     def stop_simulation(self):
         """ Stops the simulation. """
-        # TODO
-        remote_api.simxStopSimulation(self.client_id, self._simulation_mode)
-        # self.call_remote_api('simxStopSimulation')
+        remote_api.simxStopSimulation(self.client_id, vrep_mode['sending'])
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -146,6 +144,10 @@ class VrepIO(AbstractIO):
     def resume_simulation(self):
         """ Resumes the simulation. """
         self.start_simulation()
+
+    def close_scene(self):
+        clos = remote_api.simxCloseScene(self.client_id, vrep_mode['blocking'])
+        return clos
 
     def next_simulation_step(self):
         """ Executes the next simulation step when synchronous mode is enabled """
