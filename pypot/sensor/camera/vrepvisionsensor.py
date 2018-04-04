@@ -12,10 +12,13 @@ class VrepVisionSensor(AbstractCamera):
             vision_sensor_handler = vrep_io.get_object_handle(name)
         except:
             raise Exception('Can not load ' + name + ' from V-REP')
-        self._res, image = vrep_io.get_vision_sensor_image(vision_sensor_handler, streaming=True)
+        self._res, image = vrep_io.get_vision_sensor_image(vision_sensor_handler, False)
 
         def get_vision_sensor_image():
-            return vrep_io.get_vision_sensor_image(vision_sensor_handler, buffer=True)
+            vrep_io.enable_syncronous_mode(True)
+            vrep_image = vrep_io.get_vision_sensor_image(vision_sensor_handler)
+            vrep_io.enable_syncronous_mode(False)
+            return vrep_image
 
         self._grab = get_vision_sensor_image
         AbstractCamera.__init__(self, name, self._res, fps)

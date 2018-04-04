@@ -145,9 +145,6 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         while vrep_io.get_simulation_current_time() < 1.:
             sys_time.sleep(0.1)
 
-    def pause_simu():
-        vrep_io
-
     def stop_simu():
         if tracked_objects:
             vot.stop()

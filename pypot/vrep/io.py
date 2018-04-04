@@ -151,8 +151,13 @@ class VrepIO(AbstractIO):
         self.start_simulation()
 
     def close_scene(self):
-        clos = remote_api.simxCloseScene(self.client_id, vrep_mode['blocking'])
-        return clos
+        remote_api.simxCloseScene(self.client_id, vrep_mode['blocking'])
+
+    def enable_syncronous_mode(self, enable_sync):
+        if enable_sync:
+            remote_api.simxSynchronous(self.client_id, enable_sync)
+        else:
+            remote_api.simxSynchronous(self.client_id, self._synchronous)
 
     def next_simulation_step(self):
         """ Executes the next simulation step when synchronous mode is enabled """
@@ -246,13 +251,14 @@ class VrepIO(AbstractIO):
         except VrepIOErrors:
             return 0.0
 
-    def get_vision_sensor_image(self, vision_sensor_handler, **kvargs):
+    def get_vision_sensor_image(self, vision_sensor_handler, buffer=True):
         """ Gets the resolution of the image and the image from a vision sensor"""
-        image = None, None
-        try:
-            image = self.call_remote_api('simxGetVisionSensorImage', vision_sensor_handler, 0, **kvargs)
-        finally:
-            return image
+        mode = vrep_mode['buffer'] if buffer else vrep_mode['streaming']
+        return_code, resolution, image = remote_api.simxGetVisionSensorImage(self.client_id, vision_sensor_handler, 0, mode)
+        if return_code is 0:
+            return resolution, image
+        else:
+            return None, None
 
     def add_cube(self, name, position, sizes, mass):
         """ Add Cube """

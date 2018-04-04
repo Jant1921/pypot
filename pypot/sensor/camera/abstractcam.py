@@ -23,13 +23,14 @@ class AbstractCamera(Sensor):
         self._last_frame = self._grab_and_process()
         self._custom_filters = {}
         self.running = True
-        self._processing = Thread(target=self._process_loop)
-        self._processing.daemon = True
-        self._processing.start()
+        # self._processing = Thread(target=self._process_loop)
+        # self._processing.daemon = True
+        # self._processing.start()
         self._contours_array_index = 1 if cv2.__version__.startswith("3.") else 0
 
     @property
     def frame(self):
+        self._last_frame = self._grab_and_process()
         return self._last_frame
 
     def post_processing(self, image):
@@ -41,12 +42,14 @@ class AbstractCamera(Sensor):
     def _grab_and_process(self):
         return self.post_processing(self.grab())
 
+    """
     def _process_loop(self):
         period = 1.0 / self.fps
 
         while self.running:
             self._last_frame = self._grab_and_process()
             time.sleep(period)
+    """
 
     @property
     def resolution(self):
@@ -128,4 +131,4 @@ class AbstractCamera(Sensor):
 
     def close(self):
         self.running = False
-        self._processing.join()
+        # self._processing.join()
