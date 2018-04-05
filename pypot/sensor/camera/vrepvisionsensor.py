@@ -29,7 +29,7 @@ class VrepVisionSensor(AbstractCamera):
         """
         self._res, image = self._grab()
         if image is None:
-            return None
+            return self._last_frame
         image = np.array(image, dtype=np.uint8)
         try:
             image.resize([self._res[0], self._res[1], 3])
