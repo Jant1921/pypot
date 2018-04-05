@@ -62,8 +62,10 @@ class VrepController(MotorsController):
             m.__dict__['_load_fifo'].append(abs(l))
             m.__dict__['present_temperature'] = 25 + \
                 round(2.5 * sum(m.__dict__['_load_fifo']) / len(m.__dict__['_load_fifo']), 1)
-
-            ll, lr = limits4handle[self.io._object_handles[m.name]]
+            key_value = self.io._object_handles[m.name]
+            ll, lr = limits4handle.get(key_value, (None, None))
+            if ll is None:
+                continue
             m.__dict__['lower_limit'] = rad2deg(ll)
             m.__dict__['upper_limit'] = rad2deg(ll) + rad2deg(lr)
 
