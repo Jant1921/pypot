@@ -297,12 +297,11 @@ def simxGetVisionSensorImage(clientID, sensorHandle, options, operationMode):
 
     reso = []
     image = []
-    if (ret == 0):
-        image = [None]*resolution[0]*resolution[1]*bytesPerPixel
-        for i in range(resolution[0] * resolution[1] * bytesPerPixel):
-            image[i] = c_image[i]
-        for i in range(2):
-            reso.append(resolution[i])
+    if ret == 0:
+        reso = [resolution[0], resolution[1]]
+        image_size = resolution[0] * resolution[1] * bytesPerPixel
+        for pixel in range(image_size):
+            image.append(c_image[pixel])
     return ret, reso, image
 
 def simxSetVisionSensorImage(clientID, sensorHandle, image, options, operationMode):
