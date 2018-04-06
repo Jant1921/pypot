@@ -386,6 +386,25 @@ class DxlSRMotor(DxlMotor):
         self.max_pos = 180
 
 
+class SimulatedMotor(DxlMotor):
+    """ This class represents the simulated prismatic joint.
+            """
+    registers = list(DxlMotor.registers)
+
+    # pid = DxlRegister(rw=True)
+
+    def __init__(self, id, name=None, model='',
+                 direct=True, offset=0.0, broken=False,
+                 angle_limit=None):
+        """ This class represents the simulated prismatic joint.
+            """
+        self.simulated = True
+        DxlMotor.__init__(self, id, name, model,
+                          direct, offset, broken,
+                          angle_limit)
+        self.max_pos = 1
+
+
 class SafeCompliance(StoppableLoopThread):
     """ This class creates a controller to active compliance only if the current motor position is included in the angle limit, else the compliance is turned off. """
 

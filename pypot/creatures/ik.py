@@ -10,6 +10,7 @@ class IKChain(Chain):
         This class is based on the IK Chain as defined in the IKPY library (https://github.com/Phylliade/ikpy). It provides convenient methods to directly create such a chain directly from a Poppy Creature.
 
     """
+
     @classmethod
     def from_poppy_creature(cls, poppy, motors, passiv, tip,
                             reversed_motors=[]):
@@ -22,10 +23,11 @@ class IKChain(Chain):
             :param list reversed_motors: list of motors that should be manually reversed (due to a problem in the URDF?)
 
         """
+        filtered_motors = filter(lambda motor: not hasattr(motor, 'simulated'), motors)
         chain_elements = get_chain_from_joints(poppy.urdf_file,
-                                               [m.name for m in motors])
+                                               [m.name for m in filtered_motors])
 
-        activ = [False] + [m not in passiv for m in motors] + [True]
+        activ = [False] + [m not in passiv for m in filtered_motors] + [True]
 
         chain = cls.from_urdf_file(poppy.urdf_file,
                                    base_elements=chain_elements,
@@ -43,7 +45,7 @@ class IKChain(Chain):
             l.bounds = tuple(map(rad2deg, bounds))
 
         chain._reversed = array([(-1 if m in reversed_motors else 1)
-                                 for m in motors])
+                                 for m in filtered_motors])
 
         return chain
 

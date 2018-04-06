@@ -37,6 +37,7 @@ torque_max = {  # in N.m
     'RX-64': 4.,
     'XL-320': 0.39,
     'SR-RH4D': 0.57,
+    'simulated': 5.
 }
 
 velocity = {  # in degree/s

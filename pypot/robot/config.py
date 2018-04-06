@@ -123,12 +123,15 @@ def motor_from_confignode(config, motor_name):
         MotorCls = pypot.dynamixel.motor.DxlXL320Motor
     elif type == 'MX-64' or type == 'MX-106':
         MotorCls = pypot.dynamixel.motor.DxlMX64106Motor
+    elif type == 'simulated':
+        MotorCls = pypot.dynamixel.motor.SimulatedMotor
     elif type.startswith('MX'):
         MotorCls = pypot.dynamixel.motor.DxlMXMotor
     elif type.startswith('AX') or type.startswith('RX'):
         MotorCls = pypot.dynamixel.motor.DxlAXRXMotor
     elif type.startswith('SR'):
         MotorCls = pypot.dynamixel.motor.DxlSRMotor
+
 
     broken = 'broken' in params and params['broken']
 
