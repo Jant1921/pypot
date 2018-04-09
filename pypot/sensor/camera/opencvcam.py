@@ -16,10 +16,12 @@ class OpenCVCamera(AbstractCamera):
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         if not self.capture.isOpened():
             raise ValueError('Can not open camera device {}. You should start your robot with argument camera=\'dummy\'. E.g. p = PoppyErgoJr(camera=\'dummy\')'.format(index))
+        self.running = True
+        self.fps = fps
         self._processing = Thread(target=self._process_loop)
         self._processing.daemon = True
         self._processing.start()
-        self.running = True
+
         AbstractCamera.__init__(self, name, resolution, fps)
 
     @property
