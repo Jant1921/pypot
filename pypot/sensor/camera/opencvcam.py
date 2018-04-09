@@ -1,7 +1,8 @@
 import cv2
 
 from .abstractcam import AbstractCamera
-
+from threading import Thread
+from time import time
 
 class OpenCVCamera(AbstractCamera):
     registers = AbstractCamera.registers + ['index']
@@ -15,7 +16,10 @@ class OpenCVCamera(AbstractCamera):
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         if not self.capture.isOpened():
             raise ValueError('Can not open camera device {}. You should start your robot with argument camera=\'dummy\'. E.g. p = PoppyErgoJr(camera=\'dummy\')'.format(index))
-
+        self._processing = Thread(target=self._process_loop)
+        self._processing.daemon = True
+        self._processing.start()
+        self.running = True
         AbstractCamera.__init__(self, name, resolution, fps)
 
     @property
@@ -23,7 +27,7 @@ class OpenCVCamera(AbstractCamera):
         return self._index
 
     def grab(self):
-        """v-rep image grab
+        """OpenCV image grab
         :returns formatted image as array of BGR values
         """
         rval, frame = self.capture.read()
@@ -31,6 +35,15 @@ class OpenCVCamera(AbstractCamera):
             raise EnvironmentError('Can not grab image from the camera!')
         return frame
 
+    def _process_loop(self):
+        period = 1.0 / self.fps
+        last_frame_time = time()
+        while self.running:
+            if time() - last_frame_time > period:
+                self._last_frame = self._grab_and_process()
+                last_frame_time = time()
+
     def close(self):
         AbstractCamera.close(self)
+        self._processing.join()
         self.capture.release()
