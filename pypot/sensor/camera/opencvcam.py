@@ -17,12 +17,17 @@ class OpenCVCamera(AbstractCamera):
         if not self.capture.isOpened():
             raise ValueError('Can not open camera device {}. You should start your robot with argument camera=\'dummy\'. E.g. p = PoppyErgoJr(camera=\'dummy\')'.format(index))
         self.running = True
-        self.fps = fps
+        """
         self._processing = Thread(target=self._process_loop)
         self._processing.daemon = True
         self._processing.start()
-
+        """
         AbstractCamera.__init__(self, name, resolution, fps)
+
+    @property
+    def frame(self):
+        return self.grab()
+        # return self._last_frame
 
     @property
     def index(self):
@@ -37,6 +42,7 @@ class OpenCVCamera(AbstractCamera):
             raise EnvironmentError('Can not grab image from the camera!')
         return frame
 
+    """
     def _process_loop(self):
         period = 1.0 / self.fps
         last_frame_time = time()
@@ -44,8 +50,9 @@ class OpenCVCamera(AbstractCamera):
             if time() - last_frame_time > period:
                 self._last_frame = self._grab_and_process()
                 last_frame_time = time()
+    """
 
     def close(self):
+        # self._processing.join()
         AbstractCamera.close(self)
-        self._processing.join()
         self.capture.release()
