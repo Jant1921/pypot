@@ -88,40 +88,38 @@ class AbstractCamera(Sensor):
         except KeyError:
             return None
 
-    def get_objects_center(self, image, approximate=False, draw_contours=False):
-        """ Gets contours and center of objects found in an image
+    def get_image_objects(self, image, approximate=False, draw_contours=False):
+        """ Gets contour, center and area of objects found in image
         :param image: BGR image array
         :param approximate: to approximate the contour shape to another shape with less number of vertices
         :param draw_contours: to draw the contours and centers in the original image
-        :return: BGR image array, array of: (contours array, (x,y) center elements and contours areas)
+        :return: BGR image array, array of: (contour array, (x,y) element center, contour area)
         """
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray_image, (9, 9), 0)
         thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)[1]
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = contours[self._contours_array_index]
-        centers = []
-        areas = []
-        approximated_contours = []
+        shapes = []
         for contour in contours:
             if approximate:
                 epsilon = 0.1 * cv2.arcLength(contour, True)
                 contour = cv2.approxPolyDP(contour, epsilon, True)
-                approximated_contours.append(contour)
+            area = cv2.contourArea(contour)
+            if area == 0:
+                continue
             # compute the center of the contour
             M = cv2.moments(contour)
-            area = cv2.contourArea(contour)
-            areas.append(area)
             try:
                 center_x = int(M["m10"] / M["m00"])
                 center_y = int(M["m01"] / M["m00"])
-                centers.append((center_x, center_y))
                 if draw_contours:
                     cv2.drawContours(image, [contour], -1, (0, 255, 0), 2)
                     cv2.circle(image, (center_x, center_y), 4, (255, 255, 255), -1)
+                shapes.append(contour, (center_x, center_y), area)
             except:
                 pass
-        return image, zip(approximated_contours if approximate else contours, centers, areas)
+        return image, shapes
 
     def close(self):
         self.running = False
