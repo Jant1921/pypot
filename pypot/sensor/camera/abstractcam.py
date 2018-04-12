@@ -116,7 +116,7 @@ class AbstractCamera(Sensor):
                 if draw_contours:
                     cv2.drawContours(image, [contour], -1, (0, 255, 0), 2)
                     cv2.circle(image, (center_x, center_y), 4, (255, 255, 255), -1)
-                shapes.append(contour, (center_x, center_y), area)
+                shapes.append((contour, (center_x, center_y), area))
             except:
                 pass
         return image, shapes
