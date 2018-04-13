@@ -100,7 +100,7 @@ class AbstractCamera(Sensor):
         thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)[1]
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = contours[self._contours_array_index]
-        shapes = []
+        objects = []
         for contour in contours:
             if approximate:
                 epsilon = 0.1 * cv2.arcLength(contour, True)
@@ -116,10 +116,10 @@ class AbstractCamera(Sensor):
                 if draw_contours:
                     cv2.drawContours(image, [contour], -1, (0, 255, 0), 2)
                     cv2.circle(image, (center_x, center_y), 4, (255, 255, 255), -1)
-                shapes.append((contour, (center_x, center_y), area))
+                objects.append((contour, (center_x, center_y), area))
             except:
                 pass
-        return image, shapes
+        return image, objects
 
     def close(self):
         self.running = False
