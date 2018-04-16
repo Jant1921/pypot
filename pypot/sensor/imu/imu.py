@@ -59,7 +59,7 @@ class IMU(Sensor):
         self._serial_device = None
         if port == 'auto':
             # get the list of ports
-            available_ports = get_available_ports()
+            available_ports = get_available_ports(only_free=True)
             for available_port in available_ports:
                 self._serial_device = connect_to_serial_imu(available_port)
                 if self._serial_device is not None:
@@ -107,6 +107,6 @@ class IMU(Sensor):
     def close(self):
         self.running = False
         # wait the main loop is finished
-        sleep(0.5)
         self._sync.join()
         self._serial_device.close()
+        sleep(1)
