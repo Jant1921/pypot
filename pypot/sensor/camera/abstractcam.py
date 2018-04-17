@@ -50,7 +50,7 @@ class AbstractCamera(Sensor):
         :param upper_hsv_range: upper color range in hsv format
         :return: filtered image array
         """
-        image = self.grab()
+        image = self.frame
         lower = np.array(lower_hsv_range, dtype=np.uint8)
         upper = np.array(upper_hsv_range, dtype=np.uint8)
         mask = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)

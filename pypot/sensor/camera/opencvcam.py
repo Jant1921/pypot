@@ -24,6 +24,9 @@ class OpenCVCamera(AbstractCamera):
         self._processing.daemon = True
         self._processing.start()
         self._last_frame = None
+        self._not_initialized = True
+        while self._not_initialized:
+            pass
 
     @property
     def frame(self):
@@ -53,6 +56,7 @@ class OpenCVCamera(AbstractCamera):
         period = 1.0 / self.fps
         last_frame_time = time()
         self._last_frame = self._grab_and_process()
+        self._not_initialized = False
         while self.running:
             if time() - last_frame_time > period:
                 self._last_frame = self._grab_and_process()
