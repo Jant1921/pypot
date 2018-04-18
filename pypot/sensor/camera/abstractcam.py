@@ -8,6 +8,8 @@ hsv_color_ranges = {
     "red":  ([0, 50, 50], [20, 255, 255]),
     "yellow": ([20, 50, 50], [60, 255, 255])
 }
+default_gaussian_kernel_size = 9
+default_threshold_limits = [10, 255]
 
 
 class AbstractCamera(Sensor):
@@ -88,16 +90,29 @@ class AbstractCamera(Sensor):
         except KeyError:
             return None
 
-    def get_image_objects(self, image, approximate=False, draw_contours=False):
+    def get_image_objects(self, image, approximate=False, draw_contours=False, gaussian_filter_size=default_gaussian_kernel_size, threshold_limits=default_threshold_limits):
+        # type: (list, bool, bool, int, [int,int]) -> (bool, list)
         """ Gets contour, center and area of objects found in image
         :param image: BGR image array
         :param approximate: to approximate the contour shape to another shape with less number of vertices
         :param draw_contours: to draw the contours and centers in the original image
+        :param gaussian_filter_size: gaussian filter size odd number
+        :param threshold_limits: list of two elements [lower limit, upper limit]
         :return: BGR image array, array of: (contour array, (x,y) element center, contour area)
         """
+
+        if gaussian_filter_size % 2 == 0:
+            gaussian_filter_size += 1
+
+        if type(threshold_limits) == list:
+            if len(threshold_limits) != 2:
+                threshold_limits = default_threshold_limits
+        else:
+            threshold_limits = default_threshold_limits
+
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray_image, (9, 9), 0)
-        thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)[1]
+        blurred = cv2.GaussianBlur(gray_image, (gaussian_filter_size, gaussian_filter_size), 0)
+        thresh = cv2.threshold(blurred, threshold_limits[0], threshold_limits[1], cv2.THRESH_BINARY)[1]
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = contours[self._contours_array_index]
         objects = []
