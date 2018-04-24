@@ -6,7 +6,7 @@ class Imitator(object):
 
     @property
     def simulated_robot(self):
-        return self.
+        return self.simulated_robot
 
     @property
     def real_robot(self):
