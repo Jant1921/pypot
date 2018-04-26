@@ -211,6 +211,21 @@ class MotorsRegistersHandler(PoppyRequestHandler):
         self.write_json(registers_motors)
 
 
+class RobotInstruction(PoppyRequestHandler):
+    def post(self):
+        try:
+            data = json.loads(self.request.body.decode())
+            instruction = data['instruction']
+            get_value = data['get']
+            if get_value:
+                self.write_json({'result': eval('self.restful_robot.robot.{}'.format(instruction))})
+            else:
+                exec ('self.restful_robot.{}'.format(instruction))
+                self.write_json({'success': True})
+        except SyntaxError as error:
+            self.write_json({'error': error.message})
+
+
 class HTTPRobotServer(AbstractServer):
     """Refer to the REST API for an exhaustive list of the possible routes."""
 
@@ -248,6 +263,7 @@ class HTTPRobotServer(AbstractServer):
             (r'/primitive/(?P<primitive_name>[a-zA-Z0-9_]+)/method/list\.json', ListPrimitiveMethodsHandler),
             (r'/primitive/(?P<primitive_name>[a-zA-Z0-9_]+)/method/(?P<method_name>[a-zA-Z0-9_]+)/args\.json', CallPrimitiveMethodHandler),
             (r'/motors/register/(?P<register_name>[a-zA-Z0-9_]+)', MotorsRegistersHandler),
+            (r'/run_instruction', RobotInstruction),
         ])
 
     def run(self, **kwargs):
