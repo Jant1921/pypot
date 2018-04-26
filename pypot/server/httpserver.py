@@ -220,7 +220,7 @@ class RobotInstruction(PoppyRequestHandler):
             if get_value:
                 self.write_json({'result': eval('self.restful_robot.robot.{}'.format(instruction))})
             else:
-                exec ('self.restful_robot.{}'.format(instruction))
+                exec ('self.restful_robot.robot.{}'.format(instruction))
                 self.write_json({'success': True})
         except SyntaxError as error:
             self.write_json({'error': error})
