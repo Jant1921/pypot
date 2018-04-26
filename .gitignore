@@ -33,6 +33,9 @@ doc/_build
 ehthumbs.db
 Thumbs.db
 
+# PyCharm
+pypot/.idea
+
 # Gedit
 *~
 
