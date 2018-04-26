@@ -223,7 +223,7 @@ class RobotInstruction(PoppyRequestHandler):
                 exec ('self.restful_robot.{}'.format(instruction))
                 self.write_json({'success': True})
         except SyntaxError as error:
-            self.write_json({'error': error.message})
+            self.write_json({'error': error})
 
 
 class HTTPRobotServer(AbstractServer):
