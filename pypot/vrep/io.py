@@ -58,19 +58,7 @@ class VrepIO(AbstractIO):
         self.start = start
         self._synchronous = synchronous
         self._simulation_mode = vrep_mode['blocking'] if synchronous else vrep_mode['normal']
-
-        # self.client_id = remote_api.simxStart(
-        #     vrep_host, vrep_port, True, True, 5000, 5)
-        # if self.client_id == -1:
-        #     msg = ('Could not connect to V-REP server on {}:{}. '
-        #            'This could also means that you still have '
-        #            'a previously opened connection running! '
-        #            '(try pypot.vrep.close_all_connections())')
-        #     raise VrepConnectionError(msg.format(vrep_host, vrep_port))
-
-        # if scene is not None:
-        #     self.load_scene(scene, start)
-
+        self.client_id = None
         self.open_io()
 
     def open_io(self):

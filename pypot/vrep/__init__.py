@@ -5,7 +5,7 @@ from functools import partial
 from collections import OrderedDict
 
 from .io import (VrepIO, close_all_connections,
-                 VrepIOError, VrepConnectionError)
+                 VrepIOError, VrepConnectionError, remote_api)
 
 from .controller import VrepController, VrepObjectTracker
 from .controller import VrepCollisionTracker, VrepCollisionDetector
@@ -19,7 +19,7 @@ import pypot.utils.pypot_time as pypot_time
 import time as sys_time
 
 logger = logging.getLogger(__name__)
-
+vrep_session_id = None
 
 class vrep_time():
     def __init__(self, vrep_io):
@@ -81,7 +81,8 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
 
     """
     vrep_io = VrepIO(vrep_host, vrep_port, synchronous=synchronous)
-
+    global vrep_session_id
+    vrep_session_id = vrep_io.client_id
     vreptime = vrep_time(vrep_io)
     pypot_time.time = vreptime.get_time
     pypot_time.sleep = vreptime.sleep
@@ -167,6 +168,8 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         vrep_io.close_scene()
         robot.close()
         close_all_connections()
+        global vrep_session_id
+        vrep_session_id = None
 
     def next_simulation_step():
         vrep_io.next_simulation_step()
