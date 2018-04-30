@@ -1,6 +1,7 @@
 import sys
 
 from .abstractcreature import AbstractPoppyCreature
+from .imitator import Imitator
 
 module = sys.modules[__name__]
 
