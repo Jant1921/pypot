@@ -44,7 +44,6 @@ class Sender(object):
     def _send_data(self):
         self.arduino.write(self._output_header_buffer + self._output_data_buffer)
         self._clear_output_buffers()
-
     def move_motors(self):
         self._output_header_buffer[HEADER_MESSAGE_TYPE] = MOVE_MOTORS_MESSAGE_CODE
         # final
@@ -169,6 +168,21 @@ class ArduinoSensor(Sensor):
         self._status_loop.daemon = True
         self._status_loop.start()
         self.running = True
+
+    def send_move_motors_message(self):
+        #TODO move_motors
+        pass
+
+    def send_play_sound_message(self):
+        #TODO play_sound
+        pass
+
+    def send_config_frequency_message(self):
+        #TODO config_frequency
+        pass
+
+    def send_ack_message(self):
+        self._sender.send_ack_message()
 
     def close(self):
         self.running = False

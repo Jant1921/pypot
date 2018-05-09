@@ -34,7 +34,10 @@ ehthumbs.db
 Thumbs.db
 
 # PyCharm
-pypot/.idea
+*.idea
+
+# VSCode
+*.vscode/
 
 # Gedit
 *~
