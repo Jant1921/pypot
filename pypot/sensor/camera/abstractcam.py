@@ -57,6 +57,8 @@ class AbstractCamera(Sensor):
         upper = np.array(upper_hsv_range, dtype=np.uint8)
         mask = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(mask, lower, upper)
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
         output = cv2.bitwise_and(image, image, mask=mask)
         return output
 

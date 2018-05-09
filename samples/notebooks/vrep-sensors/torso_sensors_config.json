@@ -11,6 +11,18 @@
     }
   },
   "sensors":{
+    "head_camera": {
+      "type": "VrepVisionSensor",
+      "fps": 25
+    },
+    "floating_camera":{
+      "type": "VrepVisionSensor",
+      "fps": 25
+    },
+    "top_camera":{
+      "type": "VrepVisionSensor",
+      "fps": 25
+    }
   },
   "motorgroups": {
     "head": [
@@ -45,7 +57,7 @@
       "type": "MX-28",
       "id": 44,
       "angle_limit": [
-        -10.0,
+        -20.0,
         90.0
       ],
       "orientation": "direct"
@@ -115,8 +127,8 @@
       "type": "MX-28",
       "id": 43,
       "angle_limit": [
-        -70.0,
-        90.0
+        -70,
+        90
       ],
       "orientation": "indirect"
     },
@@ -166,7 +178,27 @@
       "id": 41,
       "angle_limit": [
         -180.0,
-        0.0
+        150.0
+      ],
+      "orientation": "direct"
+    },
+    "l_arm_z_extension": {
+      "offset": 0.0,
+      "type": "simulated",
+      "id": 98,
+      "angle_limit": [
+        0.0,
+        1.0
+      ],
+      "orientation": "direct"
+    },
+    "l_forearm_extension": {
+      "offset": 0.0,
+      "type": "simulated",
+      "id": 99,
+      "angle_limit": [
+        0.0,
+        1.0
       ],
       "orientation": "direct"
     }

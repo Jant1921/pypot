@@ -33,9 +33,9 @@ class VrepVisionSensor(AbstractCamera):
         image = np.array(image, dtype=np.uint8)
         try:
             image.resize([self._res[0], self._res[1], 3])
+            image = np.rot90(image, 2)
+            image = np.fliplr(image)
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         except ValueError:
             return self._last_frame
-        image = np.rot90(image, 2)
-        image = np.fliplr(image)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         return image

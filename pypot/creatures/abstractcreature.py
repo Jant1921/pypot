@@ -14,6 +14,7 @@ from pypot.server.snap import SnapRobotServer, find_local_ip
 logger = logging.getLogger(__name__)
 
 MAX_SETUP_TRIALS = 10
+actual_robot = None
 
 
 class classproperty(property):
@@ -162,7 +163,8 @@ class AbstractPoppyCreature(Robot):
 
         if start_background_services:
             cls.start_background_services(poppy_creature)
-
+        global actual_robot
+        actual_robot = poppy_creature
         return poppy_creature
 
     @classmethod
