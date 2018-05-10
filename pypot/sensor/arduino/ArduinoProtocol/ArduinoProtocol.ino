@@ -5,7 +5,7 @@ const int ledBuiltIn =  LED_BUILTIN;// the number of the LED pin
 
 unsigned long previousTransmitMillis = 0;
 unsigned long transmitMillis = millis();
-const int transmitInterval = 1000;
+unsigned long transmitInterval = 5000;
 
 /** Messages Codes **/
 const int STATUS_MESSAGE_CODE = 0x00;
@@ -59,6 +59,9 @@ uint8_t inputHeaderBuffer[INPUT_HEADER_BUFFER_SIZE];
 int inputHeaderActualPosition = 0;
 bool inputHeaderFound = false;
 bool isHeader = false;
+uint8_t soundLengthBytes[2];
+uint8_t soundTrack = 0x00;
+uint8_t trackLength = 0x0000;
 
 uint8_t buffer_checksum(uint8_t pBuffer[], uint8_t bufferSize) {
   uint8_t result = 0;
@@ -69,9 +72,22 @@ uint8_t buffer_checksum(uint8_t pBuffer[], uint8_t bufferSize) {
   result = sum & 0xFF;
   return result;
 }
+
+/************************************************************************/
+/************************************************************************/
+/************************************************************************/
 /*
  * Receiver Methods
  */
+uint16_t parseBytesToNumber(uint8_t bytes[], int arraySize){
+  uint16_t value = 0;
+  for (int i = 0; i < arraySize; i++){
+    value = value * 256;
+    value += bytes[i];
+  }
+  return value;
+}
+
 void clearInputBuffers(){
   inputHeaderActualPosition = 0;
 }
@@ -90,8 +106,8 @@ bool isHeaderBufferFull(){
   return inputHeaderActualPosition == INPUT_HEADER_BUFFER_SIZE;
 }
 
-bool isValidChecksum(uint8_t pChecksum){
-  uint8_t calculatedChecksum = buffer_checksum(inputHeaderBuffer,INPUT_HEADER_BUFFER_SIZE);
+bool isValidChecksum(uint8_t pBuffer[], uint8_t pBufferSize, uint8_t pChecksum){
+  uint8_t calculatedChecksum = buffer_checksum(pBuffer,pBufferSize);
   return calculatedChecksum == pChecksum;
 }
 
@@ -101,24 +117,34 @@ void resetInputData(){
   isHeader = false;
 }
 
-void processIncomingMessage(){
-  switch (inputHeaderBuffer[HEADER_MESSAGE_TYPE]){
+void processData(uint8_t pMessageType, uint8_t pMessageData[]){
+  switch (pMessageType){
     case MOVE_MOTORS_MESSAGE_CODE:
+      digitalWrite(ledBuiltIn, HIGH);
       break;
     case PLAY_SOUND_MESSAGE_CODE:
+      soundLengthBytes[0] = pMessageData[1];
+      soundLengthBytes[1] = pMessageData[2];
+      soundTrack = pMessageData[0];
+      trackLength = parseBytesToNumber(soundLengthBytes, 2);
+      // play
+      digitalWrite(ledBuiltIn, HIGH);
       break;
     case CONFIG_FREQUENCY_MESSAGE_CODE:
+      transmitInterval = parseBytesToNumber(pMessageData, 4);
+      digitalWrite(ledBuiltIn, HIGH);
       break;
     case ODROID_ACK_MESSAGE_CODE:
+      digitalWrite(ledBuiltIn, HIGH);
       break;
     default:
       break;
   }
-  digitalWrite(ledBuiltIn, HIGH);
 }
 
-bool validInputData(uint8_t dataBufferSize){
+bool processInputData(uint8_t dataBufferSize){
   if(dataBufferSize == 0){
+    processData(inputHeaderBuffer[HEADER_MESSAGE_TYPE], new uint8_t[0]);
     return true;
   }
   uint8_t inputDataBuffer[dataBufferSize];
@@ -131,7 +157,8 @@ bool validInputData(uint8_t dataBufferSize){
       bytePosition++;
     }
   }
-  if(isValidChecksum(incomingDataByte)){
+  if(isValidChecksum(inputDataBuffer, dataBufferSize, incomingDataByte)){
+    processData(inputHeaderBuffer[HEADER_MESSAGE_TYPE], inputDataBuffer);
     return true;
   } else{
     return false;
@@ -145,16 +172,13 @@ void verifyIncomingData(){
     inputHeaderBuffer[inputHeaderActualPosition] = incomingByte;
     inputHeaderActualPosition++;
     if(isHeaderBufferFull()){
-      if(isValidChecksum(incomingByte)){
-        if (validInputData(inputHeaderBuffer[HEADER_DATA_SIZE])){
-          processIncomingMessage();
-        }
+      if(isValidChecksum(inputHeaderBuffer, INPUT_HEADER_BUFFER_SIZE, incomingByte)){
+        processInputData(inputHeaderBuffer[HEADER_DATA_SIZE]);
       }
       resetInputData();
     }
   }
 }
-
 
 /************************************************************************/
 /************************************************************************/

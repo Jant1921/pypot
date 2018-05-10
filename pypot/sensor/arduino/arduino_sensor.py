@@ -87,16 +87,17 @@ class Sender(object):
     def config_frequency(self, frequency):
         self._fill_header(CONFIG_FREQUENCY_MESSAGE_CODE, CONFIG_FREQUENCY_MESSAGE_SIZE)
         self._initialize_output_data(CONFIG_FREQUENCY_MESSAGE_SIZE)
-        self._output_data_buffer[0] = split_value(frequency, -2, None)
-        self._output_data_buffer[1] = split_value(frequency, -8, -6)
-        self._output_data_buffer[2] = split_value(frequency, -6, -4)
-        self._output_data_buffer[3] = split_value(frequency, -4, -2)
+        self._output_data_buffer[0] = split_value(frequency, -8, -6)
+        self._output_data_buffer[1] = split_value(frequency, -6, -4)
+        self._output_data_buffer[2] = split_value(frequency, -4, -2)
+        self._output_data_buffer[3] = split_value(frequency, -2, None)
         self._generate_output_data_checksum()
         self._send_data()
 
     def send_ack_message(self):
         self._fill_header(ODROID_ACK_MESSAGE_CODE, ODROID_ACK_MESSAGE_SIZE)
         self._send_data()
+
 
 class Receiver(object):
     def __init__(self, arduino):
@@ -142,11 +143,9 @@ class Receiver(object):
         print self._input_data_buffer
         if valid_checksum(self._input_data_buffer):
             self._process_incoming_message()
-            print 'valid data'
             return True
         else:
             # invalid data
-            print 'invalid data'
             return False
 
     def _check_header_start(self, byte):
@@ -168,10 +167,7 @@ class Receiver(object):
                 if self._header_buffer_full():
                     print self._input_header_buffer
                     if valid_checksum(self._input_header_buffer):
-                        print 'valid header'
                         self._read_data(self._input_header_buffer[HEADER_DATA_SIZE])
-                    else:
-                        print 'invalid header'
                     self._reset_data()
 
 
@@ -202,8 +198,8 @@ class ArduinoSensor(Sensor):
     def send_move_motors_message(self):
         self._sender.move_motors()
 
-    def send_play_sound_message(self):
-        self._sender.play_sound()
+    def send_play_sound_message(self, track, length):
+        self._sender.play_sound(track, length)
 
     def send_config_frequency_message(self, frequency):
         self._sender.config_frequency(frequency)
