@@ -1,5 +1,5 @@
-const uint8_t OUTPUT_HEADER_START_SYMBOL = '~';
-const uint8_t INPUT_HEADER_START_SYMBOL = '|';
+const uint8_t OUTPUT_HEADER_START_VALUE = 0x7e;
+const uint8_t INPUT_HEADER_START_VALUE = 0x7c;
 
 const int ledBuiltIn =  LED_BUILTIN;// the number of the LED pin
 
@@ -8,7 +8,12 @@ unsigned long transmitMillis = millis();
 const int transmitInterval = 1000;
 
 /** Messages Codes **/
-const int CODE_STATUS_MESSAGE = 0x00;
+const int STATUS_MESSAGE_CODE = 0x00;
+const int MOVE_MOTORS_MESSAGE_CODE = 0x01;
+const int PLAY_SOUND_MESSAGE_CODE = 0x02;
+const int CONFIG_FREQUENCY_MESSAGE_CODE = 0x03;
+const int ODROID_ACK_MESSAGE_CODE = 0x10;
+const int ARDUINO_ACK_MESSAGE_CODE = 0x11;
 
 /** Header Buffer Registers **/
 // Output Header
@@ -48,7 +53,6 @@ const int DATA_MOTOR_2_1 = 15;
 // Checksum position
 const int DATA_CHECKSUM = 16;
 
-
 // Receiver Variables
 const uint8_t INPUT_HEADER_BUFFER_SIZE = 0x04;
 uint8_t inputHeaderBuffer[INPUT_HEADER_BUFFER_SIZE];
@@ -73,7 +77,7 @@ void clearInputBuffers(){
 }
 
 void checkHeaderStart(uint8_t byte){
-  if(byte == INPUT_HEADER_START_SYMBOL){
+  if(byte == INPUT_HEADER_START_VALUE){
     if(!inputHeaderFound){
       isHeader = true;
       inputHeaderFound = true;
@@ -97,21 +101,41 @@ void resetInputData(){
   isHeader = false;
 }
 
-bool readInputData(uint8_t bufferSize){
-  if(bufferSize==0){
+void processIncomingMessage(){
+  switch (inputHeaderBuffer[HEADER_MESSAGE_TYPE]){
+    case MOVE_MOTORS_MESSAGE_CODE:
+      break;
+    case PLAY_SOUND_MESSAGE_CODE:
+      break;
+    case CONFIG_FREQUENCY_MESSAGE_CODE:
+      break;
+    case ODROID_ACK_MESSAGE_CODE:
+      break;
+    default:
+      break;
+  }
+  digitalWrite(ledBuiltIn, HIGH);
+}
+
+bool validInputData(uint8_t dataBufferSize){
+  if(dataBufferSize == 0){
     return true;
   }
-  uint8_t inputBufferData[bufferSize];
+  uint8_t inputDataBuffer[dataBufferSize];
   int bytePosition = 0;
-  while (bytePosition < bufferSize){
-    int incomingDataByte = Serial.read();
+  int incomingDataByte = -1;
+  while (bytePosition < dataBufferSize){
+    incomingDataByte = Serial.read();
     if (incomingDataByte != -1) {
-      inputBufferData[bytePosition] = incomingDataByte;
+      inputDataBuffer[bytePosition] = incomingDataByte;
       bytePosition++;
     }
-    //if(isValidChecksum(incomingDataByte)){}
   }
-  return true;
+  if(isValidChecksum(incomingDataByte)){
+    return true;
+  } else{
+    return false;
+  }
 }
 
 void verifyIncomingData(){
@@ -122,10 +146,9 @@ void verifyIncomingData(){
     inputHeaderActualPosition++;
     if(isHeaderBufferFull()){
       if(isValidChecksum(incomingByte)){
-        readInputData(inputHeaderBuffer[HEADER_DATA_SIZE]);
-        digitalWrite(ledBuiltIn, HIGH);
-      }else{
-        // Serial.print("no valido");
+        if (validInputData(inputHeaderBuffer[HEADER_DATA_SIZE])){
+          processIncomingMessage();
+        }
       }
       resetInputData();
     }
@@ -166,7 +189,7 @@ void fillStatusDataBuffer(){
 }
 
 void sendStatusMessage(){
-  outputHeaderBuffer[HEADER_MESSAGE_TYPE] = CODE_STATUS_MESSAGE;
+  outputHeaderBuffer[HEADER_MESSAGE_TYPE] = STATUS_MESSAGE_CODE;
   outputHeaderBuffer[HEADER_DATA_SIZE] = OUTPUT_DATA_BUFFER_SIZE;
   outputHeaderBuffer[HEADER_CHECKSUM] = buffer_checksum(outputHeaderBuffer, OUTPUT_HEADER_BUFFER_SIZE);
   fillStatusDataBuffer();
@@ -183,7 +206,7 @@ void setup() {
   pinMode(ledBuiltIn, OUTPUT);
   while (!Serial);
   Serial.begin(115200);
-  outputHeaderBuffer[HEADER_START_CODE] = OUTPUT_HEADER_START_SYMBOL;
+  outputHeaderBuffer[HEADER_START_CODE] = OUTPUT_HEADER_START_VALUE;
 }
 
 void loop() {

@@ -13,9 +13,9 @@ ARDUINO_ACK_MESSAGE_CODE = 0x11
 MOVE_MOTORS_MESSAGE_SIZE = 0x0b
 PLAY_SOUND_MESSAGE_SIZE = 0x04
 CONFIG_FREQUENCY_MESSAGE_SIZE = 0x05
-ARDUINO_ACK_MESSAGE_SIZE = 0x00
+ODROID_ACK_MESSAGE_SIZE = 0x00
 
-HEADER_START_SYMBOL = '~'
+HEADER_START_SYMBOL = 0x7e
 OUTPUT_HEADER_START_VALUE = 0x7c
 
 HEADER_START_CODE = 0
@@ -24,11 +24,15 @@ HEADER_DATA_SIZE = 2
 HEADER_CHECKSUM = 3
 
 
+def split_value(value, start, end):
+    return int(("%020x" % value)[start:end], 16)
+
+
 def generate_checksum(buffer_list):
     value = 0
     for byte in range(0, len(buffer_list) - 1):
         value = value + buffer_list[byte]
-    return int(("%02x" % value)[-2:], 16)  # checksum value & 0xFF
+    return split_value(value, -2, None)
 
 
 def valid_checksum(buffer_list):
@@ -59,20 +63,39 @@ class Sender(object):
         self.arduino.write(array_bytes)
         self._clear_output_buffers()
 
+    def _initialize_output_data(self, data_size):
+        self._output_data_buffer = [0] * data_size
+
+    def _generate_output_data_checksum(self):
+        self._output_data_buffer[-1] = generate_checksum(self._output_data_buffer)
+
     def move_motors(self):
         self._fill_header(MOVE_MOTORS_MESSAGE_CODE, MOVE_MOTORS_MESSAGE_SIZE)
+        self._initialize_output_data(CONFIG_FREQUENCY_MESSAGE_SIZE)
+        self._generate_output_data_checksum()
         self._send_data()  # TODO se debe enviar posicion nueva a ambos motores?
 
-    def play_sound(self):
+    def play_sound(self, track, length):
         self._fill_header(PLAY_SOUND_MESSAGE_CODE, PLAY_SOUND_MESSAGE_SIZE)
+        self._initialize_output_data(PLAY_SOUND_MESSAGE_SIZE)
+        self._output_data_buffer[0] = split_value(track, -2, None)
+        self._output_data_buffer[1] = split_value(length, -4, -2)
+        self._output_data_buffer[2] = split_value(length, -2, None)
+        self._generate_output_data_checksum()
         self._send_data()
 
     def config_frequency(self, frequency):
         self._fill_header(CONFIG_FREQUENCY_MESSAGE_CODE, CONFIG_FREQUENCY_MESSAGE_SIZE)
+        self._initialize_output_data(CONFIG_FREQUENCY_MESSAGE_SIZE)
+        self._output_data_buffer[0] = split_value(frequency, -2, None)
+        self._output_data_buffer[1] = split_value(frequency, -8, -6)
+        self._output_data_buffer[2] = split_value(frequency, -6, -4)
+        self._output_data_buffer[3] = split_value(frequency, -4, -2)
+        self._generate_output_data_checksum()
         self._send_data()
 
     def send_ack_message(self):
-        self._fill_header(ODROID_ACK_MESSAGE_CODE, ARDUINO_ACK_MESSAGE_SIZE)
+        self._fill_header(ODROID_ACK_MESSAGE_CODE, ODROID_ACK_MESSAGE_SIZE)
         self._send_data()
 
 class Receiver(object):
@@ -83,7 +106,7 @@ class Receiver(object):
         self._input_header_size = 4
         self._input_header_found = False
         self._is_header = False
-        self._header_start_code = "%02x" % ord(HEADER_START_SYMBOL)  # "%02x" converts to hex
+        self._header_start_code = HEADER_START_SYMBOL
         self.running = True
 
     def _clear_input_buffers(self):
