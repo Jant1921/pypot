@@ -3,21 +3,24 @@ from time import sleep
 from threading import Thread
 from ...robot.sensor import Sensor
 
-STATUS_MESSAGE_CODE = 0x00
+# OUTPUT MESSAGES
 MOVE_MOTORS_MESSAGE_CODE = 0x01
 PLAY_SOUND_MESSAGE_CODE = 0x02
 CONFIG_FREQUENCY_MESSAGE_CODE = 0x03
 ODROID_ACK_MESSAGE_CODE = 0x10
+# INPUT MESSAGES
+STATUS_MESSAGE_CODE = 0x00
 ARDUINO_ACK_MESSAGE_CODE = 0x11
-
+INPUT_MESSAGES_CODES = [STATUS_MESSAGE_CODE, ARDUINO_ACK_MESSAGE_CODE]
+# MESSAGE SIZES
 MOVE_MOTORS_MESSAGE_SIZE = 0x0b
 PLAY_SOUND_MESSAGE_SIZE = 0x04
 CONFIG_FREQUENCY_MESSAGE_SIZE = 0x05
 ODROID_ACK_MESSAGE_SIZE = 0x00
-
-HEADER_START_SYMBOL = 0x7e
+# HEADER START VALUES
+HEADER_START_VALUE = 0x7e
 OUTPUT_HEADER_START_VALUE = 0x7c
-
+# HEADER VALUES POSITIONS
 HEADER_START_CODE = 0
 HEADER_MESSAGE_TYPE = 1
 HEADER_DATA_SIZE = 2
@@ -37,6 +40,13 @@ def generate_checksum(buffer_list):
 
 def valid_checksum(buffer_list):
     return generate_checksum(buffer_list) == buffer_list[-1]  # checksum value & 0xFF
+
+
+def is_valid_header_message_type(message_type):
+    if message_type in INPUT_MESSAGES_CODES:
+        return True
+    else:
+        return False
 
 
 class Sender(object):
@@ -69,11 +79,21 @@ class Sender(object):
     def _generate_output_data_checksum(self):
         self._output_data_buffer[-1] = generate_checksum(self._output_data_buffer)
 
-    def move_motors(self):
+    def move_motors(self, motor1_dir, motor2_dir, motor1_position, motor2_position):
         self._fill_header(MOVE_MOTORS_MESSAGE_CODE, MOVE_MOTORS_MESSAGE_SIZE)
-        self._initialize_output_data(CONFIG_FREQUENCY_MESSAGE_SIZE)
+        self._initialize_output_data(MOVE_MOTORS_MESSAGE_SIZE)
+        self._output_data_buffer[0] = motor1_dir
+        self._output_data_buffer[1] = motor2_dir
+        self._output_data_buffer[2] = split_value(motor1_position, -8, -6)
+        self._output_data_buffer[3] = split_value(motor1_position, -6, -4)
+        self._output_data_buffer[4] = split_value(motor1_position, -4, -2)
+        self._output_data_buffer[5] = split_value(motor1_position, -2, None)
+        self._output_data_buffer[6] = split_value(motor2_position, -8, -6)
+        self._output_data_buffer[7] = split_value(motor2_position, -6, -4)
+        self._output_data_buffer[8] = split_value(motor2_position, -4, -2)
+        self._output_data_buffer[9] = split_value(motor2_position, -2, None)
         self._generate_output_data_checksum()
-        self._send_data()  # TODO se debe enviar posicion nueva a ambos motores?
+        self._send_data()
 
     def play_sound(self, track, length):
         self._fill_header(PLAY_SOUND_MESSAGE_CODE, PLAY_SOUND_MESSAGE_SIZE)
@@ -107,7 +127,7 @@ class Receiver(object):
         self._input_header_size = 4
         self._input_header_found = False
         self._is_header = False
-        self._header_start_code = HEADER_START_SYMBOL
+        self._header_start_code = HEADER_START_VALUE
         self.running = True
 
     def _clear_input_buffers(self):
@@ -127,20 +147,21 @@ class Receiver(object):
 
     def _process_incoming_message(self):
         if self._input_header_buffer[HEADER_MESSAGE_TYPE] == STATUS_MESSAGE_CODE:
-            print 'status message'
+            print ('status message')
         elif self._input_header_buffer[HEADER_MESSAGE_TYPE] == ARDUINO_ACK_MESSAGE_CODE:
-            print 'Ack message'
+            print ('Arduino ack message')
 
-    def _read_data(self, buffer_size):
+    def _is_valid_data_message(self, buffer_size):
         if buffer_size == 0:  # message without data
-            print 'data 0'
+            # print 'data 0'
+            self._process_incoming_message()
             return True
         while buffer_size > 0:
             hex_input = self._get_byte()
             if hex_input is not None:
                 self._input_data_buffer.append(hex_input)
                 buffer_size -= 1
-        print self._input_data_buffer
+        # print self._input_data_buffer
         if valid_checksum(self._input_data_buffer):
             self._process_incoming_message()
             return True
@@ -166,8 +187,10 @@ class Receiver(object):
                 self._input_header_buffer.append(hex_input)
                 if self._header_buffer_full():
                     print self._input_header_buffer
-                    if valid_checksum(self._input_header_buffer):
-                        self._read_data(self._input_header_buffer[HEADER_DATA_SIZE])
+                    if (valid_checksum(self._input_header_buffer)
+                            and
+                            is_valid_header_message_type(self._input_header_buffer[HEADER_MESSAGE_TYPE])):
+                        self._is_valid_data_message(self._input_header_buffer[HEADER_DATA_SIZE])
                     self._reset_data()
 
 
@@ -195,8 +218,8 @@ class ArduinoSensor(Sensor):
         self._status_loop.start()
         self.running = True
 
-    def send_move_motors_message(self):
-        self._sender.move_motors()
+    def send_move_motors_message(self, motor1_dir, motor2_dir, motor1_position, motor2_position):
+        self._sender.move_motors(motor1_dir, motor2_dir, motor1_position, motor2_position)
 
     def send_play_sound_message(self, track, length):
         self._sender.play_sound(track, length)
