@@ -1,4 +1,4 @@
-from ...creatures.abstractcreature import actual_robot
+from ..creatures.abstractcreature import actual_robot
 
 
 class Tracker(object):

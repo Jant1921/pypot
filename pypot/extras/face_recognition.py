@@ -5,12 +5,10 @@ import numpy as np
 from threading import Thread
 from datetime import datetime
 from os import path, listdir, makedirs
-try:
-    import pickle
-    import face_recognition
-    from face_recognition.face_recognition_cli import image_files_in_folder
-except ImportError:
-    raise AssertionError('Missing Dependencies for face_recognition')
+import pickle
+import face_recognition
+from face_recognition.face_recognition_cli import image_files_in_folder
+
 
 DEFAULT_USER_PATH = path.expanduser("~")
 DEFAULT_DATASET_PATH = path.join(DEFAULT_USER_PATH, 'pypot_datasets')
@@ -165,7 +163,8 @@ class FaceRecognition(object):
                             face_bounding_boxes) < 1 else "Found more than one face"))
                 else:
                     # Add face encoding for current image to the training set
-                    encoded_faces.append(face_recognition.face_encodings(image, known_face_locations=face_bounding_boxes)[0])
+                    encoded_faces.append(
+                        face_recognition.face_encodings(image, known_face_locations=face_bounding_boxes)[0])
                     faces_tag.append(class_dir)
         save_trained_model(self._encodings_file_path,
                            encoded_faces, faces_tag)

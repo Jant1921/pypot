@@ -1,20 +1,15 @@
 import cv2
 from threading import Thread
-from ...robot.sensor import Sensor
 
-DEFAULT_IDLE_ANIMATION = 'idle.avi'
 WINDOW_NAME = 'faceDisplay'
 
 
-class ImageDisplay(Sensor):
-    registers = Sensor.registers = ['animations']
-
-    def __init__(self, name, animations, default_animation):
+class ImageDisplay(object):
+    def __init__(self, animations, default_animation):
         if not animations:
             raise AttributeError('No animations specified')
         if default_animation not in animations:
             raise AttributeError("Default animation '{}' doesn't exists in animations".format(default_animation))
-        Sensor.__init__(self, name)
         self.animations = animations
         self._actual_animation = None
         self.change_animation(default_animation)
