@@ -69,6 +69,7 @@ class FaceRecognition(object):
         self._face_animator = face_animator
         self._camera = camera
         self._recognizer_loop = None
+        self._face_recognized = False
         check_destination_folder(self._dataset_path)
 
     @property
@@ -93,7 +94,7 @@ class FaceRecognition(object):
 
     def change_face_animation(self, animation_name):
         if self._face_animator is not None:
-            self._face_animator.display(animation_name)
+            self._face_animator.change_animation(animation_name)
 
     def start_recognition(self):
         self._recognizer_loop = Thread(target=self.recognize)
@@ -137,12 +138,12 @@ class FaceRecognition(object):
         Structure of dataset image folders:
             <dataset_dir>/
             ├── <person1>/
-            │   ├── <image_name1>.jpeg
-            │   ├── <image_name2>.jpeg
+            │   ├── <image_name1>.jpeg/.png
+            │   ├── <image_name2>.jpeg/.png
             │   ├── ...
             ├── <person2>/
-            │   ├── <image_name1>.jpeg
-            │   └── <image_name2>.jpeg
+            │   ├── <image_name1>.jpeg/.png
+            │   └── <image_name2>.jpeg/.png
             └── ...
 
         """
@@ -171,12 +172,13 @@ class FaceRecognition(object):
         return encoded_faces, faces_tag
 
     def recognize(self):
-        self._running = True
+        self._face_recognized = False
         # Create arrays of known face encodings and their names
         known_face_encodings, known_face_names = load_trained_model(
             self._encodings_file_path)
         # Initialize some variables
         face_names = []
+
         frame, rgb_small_frame = get_frame_from_camera(self.camera)
         if rgb_small_frame is None:
             return
@@ -192,6 +194,7 @@ class FaceRecognition(object):
             if True in matches:
                 match_index = np.argmin(face_distances)
                 name = known_face_names[match_index]
+                self._face_recognized = True
             face_names.append(name)
         # Display the results
         for (top, right, bottom, left), name in zip(face_locations, face_names):
@@ -207,7 +210,10 @@ class FaceRecognition(object):
                         font, 1.0, (255, 255, 255), 1)
             #print (name)
         # Display the resulting image
-        self.change_face_animation('familiar_face')
+        if self._face_recognized:
+            self.change_face_animation('familiar_face')
+        else:
+            self.change_face_animation('idle')
         cv2.imshow(WINDOW_NAME, frame)
 
     def close(self):

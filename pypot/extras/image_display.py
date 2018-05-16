@@ -11,7 +11,8 @@ class ImageDisplay(object):
         if default_animation not in animations:
             raise AttributeError("Default animation '{}' doesn't exists in animations".format(default_animation))
         self.animations = animations
-        self._actual_animation = None
+        self._actual_animation_video = None
+        self._actual_animation_name = None
         self.change_animation(default_animation)
         self._running = False
         self._display_thread = None
@@ -31,19 +32,21 @@ class ImageDisplay(object):
             raise ImportError("Can't open {} video".format(self.animations[animation_name]))
 
     def change_animation(self, animation_name):
-        if animation_name in self.animations:
-            self._actual_animation = self._load_video(animation_name)
+        if self._actual_animation_name != animation_name:
+            if animation_name in self.animations:
+                self._actual_animation_video = self._load_video(animation_name)
+                self._actual_animation_name = animation_name
 
     def _display_loop(self):
         while self._running:
-            if self._actual_animation.isOpened():
-                ret, frame = self._actual_animation.read()
+            if self._actual_animation_video.isOpened():
+                ret, frame = self._actual_animation_video.read()
                 cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
                 cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
                 if ret:
                     cv2.imshow(WINDOW_NAME, frame)
                 else:
-                    self._actual_animation.set(cv2.CAP_PROP_POS_FRAMES, 1)
+                    self._actual_animation_video.set(cv2.CAP_PROP_POS_FRAMES, 1)
                 cv2.waitKey(1)
 
     def close(self):
