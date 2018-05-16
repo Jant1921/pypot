@@ -28,8 +28,8 @@ def check_destination_folder(folder_path):
 
 
 def get_frame_from_camera(camera):
-    ret, frame = camera.read()
-    if ret:
+    frame = camera.frame
+    if frame:
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
         small_rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
         return frame, small_rgb_frame
