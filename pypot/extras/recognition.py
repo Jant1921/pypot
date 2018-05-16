@@ -30,7 +30,7 @@ def check_destination_folder(folder_path):
 
 def get_frame_from_camera(camera):
     frame = camera.frame
-    if frame:
+    if frame is not None:
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
         small_rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
         return frame, small_rgb_frame
@@ -173,49 +173,51 @@ class FaceRecognition(object):
         return encoded_faces, faces_tag
 
     def recognize(self):
-        self._face_recognized = False
+        process_this_frame = True
         # Create arrays of known face encodings and their names
-        known_face_encodings, known_face_names = load_trained_model(
-            self._encodings_file_path)
+        known_face_encodings, known_face_names = load_trained_model(self._encodings_file_path)
         # Initialize some variables
         face_names = []
-
-        frame, rgb_small_frame = get_frame_from_camera(self.camera)
-        if rgb_small_frame is None:
-            return
-        # Find all the faces and face encodings in the current frame of video
-        face_locations, face_encodings = get_face_encodings(rgb_small_frame)
-        for face_encoding in face_encodings:
-            # See if the face is a match for the known face(s)
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            # Using a appropriate tolerance value .Lower is more strict. 0.6 is typical best performance.
-            matches = list(face_distances <= self.tolerance_value)
-            name = "Unknown"
-            # Selecting the best match from a given list of possible matches.
-            if True in matches:
-                match_index = np.argmin(face_distances)
-                name = known_face_names[match_index]
-                self._face_recognized = True
-            face_names.append(name)
-        # Display the results
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
-            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            top *= 4
-            right *= 4
-            bottom *= 4
-            left *= 4
-            # Draw a box around the face
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6),
-                        font, 1.0, (255, 255, 255), 1)
-            #print (name)
-        # Display the resulting image
-        if self._face_recognized:
-            self.change_face_animation('familiar_face')
-        else:
-            self.change_face_animation('idle')
-        cv2.imshow(WINDOW_NAME, frame)
+        while self._running:
+            if process_this_frame:
+                face_recognized = False
+                frame, rgb_small_frame = get_frame_from_camera(self.camera)
+                if rgb_small_frame is None:
+                    return
+                # Find all the faces and face encodings in the current frame of video
+                face_locations, face_encodings = get_face_encodings(rgb_small_frame)
+                for face_encoding in face_encodings:
+                    # See if the face is a match for the known face(s)
+                    face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                    # Using a appropriate tolerance value .Lower is more strict. 0.6 is typical best performance.
+                    matches = list(face_distances <= self.tolerance_value)
+                    name = "Unknown"
+                    # Selecting the best match from a given list of possible matches.
+                    if True in matches:
+                        match_index = np.argmin(face_distances)
+                        name = known_face_names[match_index]
+                        face_recognized = True
+                    face_names.append(name)
+                # Display the results
+                for (top, right, bottom, left), name in zip(face_locations, face_names):
+                    # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+                    top *= 4
+                    right *= 4
+                    bottom *= 4
+                    left *= 4
+                    # Draw a box around the face
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                    font = cv2.FONT_HERSHEY_DUPLEX
+                    cv2.putText(frame, name, (left + 6, bottom - 6),
+                                font, 1.0, (255, 255, 255), 1)
+                    print (name)
+                # Display the resulting image
+                if face_recognized:
+                    self.change_face_animation('familiar_face')
+                else:
+                    self.change_face_animation('idle')
+                process_this_frame = not process_this_frame
+                cv2.imshow(WINDOW_NAME, frame)
 
     def close(self):
         self._running = False
