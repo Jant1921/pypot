@@ -28,10 +28,10 @@ def check_destination_folder(folder_path):
         makedirs(folder_path)
 
 
-def get_frame_from_camera(camera):
+def get_frame_from_camera(camera, resize_factor):
     frame = camera.frame
     if frame is not None:
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        small_frame = cv2.resize(frame, (0, 0), fx=(1.0/resize_factor), fy=(1.0/resize_factor))
         small_rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
         return frame, small_rgb_frame
     else:
@@ -56,7 +56,7 @@ def load_trained_model(file_path):
 class FaceRecognition(object):
     """FaceRecognition class allows to create a dataset of faces,
     generate a file as result of the training and recognize faces"""
-    def __init__(self, camera, face_animator=None, dataset_path=DEFAULT_DATASET_PATH, encodings_file_path=DEFAULT_ENCODINGS_PATH):
+    def __init__(self, camera, face_animator=None, resize_factor=6, dataset_path=DEFAULT_DATASET_PATH, encodings_file_path=DEFAULT_ENCODINGS_PATH):
         # type: (AbstractCamera, FaceAnimator, str, str) -> None
         """ FaceRecognition class initializer
         :param camera: Robot camera sensor
@@ -69,8 +69,9 @@ class FaceRecognition(object):
         self._tolerance_value = 0.5
         self._face_animator = face_animator
         self._camera = camera
-        self._recognizer_loop = None
+        self._recognizer_thread = None
         self._face_recognized = False
+        self._resize_factor = resize_factor
         check_destination_folder(self._dataset_path)
 
     @property
@@ -97,11 +98,11 @@ class FaceRecognition(object):
         if self._face_animator is not None:
             self._face_animator.change_animation(animation_name)
 
-    def start_recognition(self):
-        self._recognizer_loop = Thread(target=self.recognize)
-        self._recognizer_loop.daemon = True
+    def recognize(self):
+        self._recognizer_thread = Thread(target=self._recognizer_loop)
+        self._recognizer_thread.daemon = True
         self._running = True
-        self._recognizer_loop.start()
+        self._recognizer_thread.start()
 
     def train_from_camera(self, face_tag, samples_number, save_images=False):
         # type: (str, int, bool) -> None
@@ -110,7 +111,7 @@ class FaceRecognition(object):
         check_destination_folder(destination_folder) if save_images else None
         face_encodings, encodings_tag = load_trained_model(self._encodings_file_path)
         while sample_number < samples_number:
-            frame, small_frame = get_frame_from_camera(self.camera)
+            frame, small_frame = get_frame_from_camera(self.camera, self._resize_factor)
             if small_frame is None:
                 continue
             face_location, face_encoding = get_face_encodings(small_frame)
@@ -118,10 +119,10 @@ class FaceRecognition(object):
                 face_encodings.append(face_encoding[0])
                 encodings_tag.append(face_tag)
                 (top, right, bottom, left) = face_location[0]
-                top *= 4
-                right *= 4
-                bottom *= 4
-                left *= 4
+                top *= self._resize_factor
+                right *= self._resize_factor
+                bottom *= self._resize_factor
+                left *= self._resize_factor
                 if save_images:
                     print (str(datetime.now().strftime('%d-%m-%Y_%H:%M:%S')))
                     image_path = '{}/{}.png'.format(
@@ -168,11 +169,10 @@ class FaceRecognition(object):
                     encoded_faces.append(
                         face_recognition.face_encodings(image, known_face_locations=face_bounding_boxes)[0])
                     faces_tag.append(class_dir)
-        save_trained_model(self._encodings_file_path,
-                           encoded_faces, faces_tag)
+        save_trained_model(self._encodings_file_path, encoded_faces, faces_tag)
         return encoded_faces, faces_tag
 
-    def recognize(self):
+    def _recognizer_loop(self):
         process_this_frame = True
         # Create arrays of known face encodings and their names
         known_face_encodings, known_face_names = load_trained_model(self._encodings_file_path)
@@ -181,7 +181,7 @@ class FaceRecognition(object):
         while self._running:
             if process_this_frame:
                 face_recognized = False
-                frame, rgb_small_frame = get_frame_from_camera(self.camera)
+                frame, rgb_small_frame = get_frame_from_camera(self.camera,self._resize_factor)
                 if rgb_small_frame is None:
                     return
                 # Find all the faces and face encodings in the current frame of video
@@ -198,29 +198,32 @@ class FaceRecognition(object):
                         name = known_face_names[match_index]
                         face_recognized = True
                     face_names.append(name)
-                # Display the results
-                for (top, right, bottom, left), name in zip(face_locations, face_names):
-                    # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                    top *= 4
-                    right *= 4
-                    bottom *= 4
-                    left *= 4
-                    # Draw a box around the face
-                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-                    font = cv2.FONT_HERSHEY_DUPLEX
-                    cv2.putText(frame, name, (left + 6, bottom - 6),
-                                font, 1.0, (255, 255, 255), 1)
                     print (name)
                 # Display the resulting image
                 if face_recognized:
-                    self.change_face_animation('familiar_face')
+                    self.change_face_animation('face_detected')
                 else:
                     self.change_face_animation('idle')
-                process_this_frame = not process_this_frame
-                cv2.imshow(WINDOW_NAME, frame)
+                if self._face_animator is None:
+                    # Display the results
+                    for (top, right, bottom, left), name in zip(face_locations, face_names):
+                        # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+                        top *= self._resize_factor
+                        right *= self._resize_factor
+                        bottom *= self._resize_factor
+                        left *= self._resize_factor
+                        # Draw a box around the face
+                        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                        font = cv2.FONT_HERSHEY_DUPLEX
+                        cv2.putText(frame, name, (left + 6, bottom - 6),
+                                    font, 1.0, (255, 255, 255), 1)
+                    cv2.imshow(WINDOW_NAME, frame)
+                    cv2.waitKey(1)
+            process_this_frame = not process_this_frame
 
     def close(self):
         self._running = False
-        self._recognizer_loop.join()
-        cv2.destroyWindow(WINDOW_NAME)
+        self._recognizer_thread.join()
+        if self._face_animator is None:
+            cv2.destroyWindow(WINDOW_NAME)
 
