@@ -1,3 +1,9 @@
+#include "capacitive.h"
+// Capacitive sensors
+Capacitive capacitive1(4);
+Capacitive capacitive2(6);
+Capacitive capacitive3(8);
+Capacitive capacitive4(5);
 // Header start codes
 const uint8_t OUTPUT_HEADER_START_VALUE = 0x7e;
 const uint8_t INPUT_HEADER_START_VALUE = 0x7c;
@@ -245,10 +251,10 @@ void verifyIncomingMessageHeader(){
 void fillStatusDataBuffer(){
   // TO_DO replace with real data 
   // Capacitives Data
-  outputDataBuffer[DATA_CAPACITIVE_1] = 0x01;
-  outputDataBuffer[DATA_CAPACIVITE_2] = 0x02;
-  outputDataBuffer[DATA_CAPACITIVE_3] = 0x03;
-  outputDataBuffer[DATA_CAPACITIVE_4] = 0x04;
+  outputDataBuffer[DATA_CAPACITIVE_1] = capacitive1.getState();
+  outputDataBuffer[DATA_CAPACIVITE_2] = capacitive2.getState();
+  outputDataBuffer[DATA_CAPACITIVE_3] = capacitive3.getState();
+  outputDataBuffer[DATA_CAPACITIVE_4] = capacitive4.getState();
   // Microphone 1 data
   outputDataBuffer[DATA_MIC_1_0] = 0x05;
   outputDataBuffer[DATA_MIC_1_1] = 0x06;

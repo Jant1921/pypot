@@ -163,6 +163,7 @@ class Receiver(object):
                 buffer_size -= 1
         # print self._input_data_buffer
         if valid_checksum(self._input_data_buffer):
+            print self._input_data_buffer
             self._process_incoming_message()
             return True
         else:
