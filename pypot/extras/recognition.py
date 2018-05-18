@@ -9,7 +9,7 @@ from os import path, listdir, makedirs
 import pickle
 import face_recognition
 from face_recognition.face_recognition_cli import image_files_in_folder
-
+from tracker import Tracker
 
 DEFAULT_USER_PATH = path.expanduser("~")
 DEFAULT_DATASET_PATH = path.join(DEFAULT_USER_PATH, 'pypot_datasets')
@@ -17,9 +17,9 @@ DEFAULT_ENCODINGS_PATH = path.join(DEFAULT_DATASET_PATH, 'faces_encodings.clf')
 WINDOW_NAME = 'RecognitionVideo'
 
 
-def get_face_encodings(frame):
+def get_faces(frame, get_encodings=True):
     face_locations = face_recognition.face_locations(frame)
-    face_encodings = face_recognition.face_encodings(frame, face_locations)
+    face_encodings = face_recognition.face_encodings(frame, face_locations) if get_encodings else None
     return face_locations, face_encodings
 
 
@@ -56,7 +56,7 @@ def load_trained_model(file_path):
 class FaceRecognition(object):
     """FaceRecognition class allows to create a dataset of faces,
     generate a file as result of the training and recognize faces"""
-    def __init__(self, camera, face_animator=None, resize_factor=6, dataset_path=DEFAULT_DATASET_PATH, encodings_file_path=DEFAULT_ENCODINGS_PATH):
+    def __init__(self, camera, face_animator=None, tracker=None, resize_factor=6, dataset_path=DEFAULT_DATASET_PATH, encodings_file_path=DEFAULT_ENCODINGS_PATH):
         # type: (AbstractCamera, FaceAnimator, str, str) -> None
         """ FaceRecognition class initializer
         :param camera: Robot camera sensor
@@ -68,8 +68,10 @@ class FaceRecognition(object):
         self._running = False
         self._tolerance_value = 0.5
         self._face_animator = face_animator
+        self._tracker = tracker
         self._camera = camera
         self._recognizer_thread = None
+        self._tracker_thread = None
         self._face_recognized = False
         self._resize_factor = resize_factor
         check_destination_folder(self._dataset_path)
@@ -98,11 +100,18 @@ class FaceRecognition(object):
         if self._face_animator is not None:
             self._face_animator.change_animation(animation_name)
 
+    def _start_thread(self, thread, target_function):
+        if not self._running:
+            thread = Thread(target=target_function)
+            thread.daemon = True
+            self._running = True
+            thread.start()
+
     def recognize(self):
-        self._recognizer_thread = Thread(target=self._recognizer_loop)
-        self._recognizer_thread.daemon = True
-        self._running = True
-        self._recognizer_thread.start()
+        self._start_thread(self._recognizer_thread, self._recognizer_loop)
+
+    def track_face(self):
+        self._start_thread(self._tracker_thread, self._tracker_loop)
 
     def train_from_camera(self, face_tag, samples_number, save_images=False):
         # type: (str, int, bool) -> None
@@ -114,7 +123,7 @@ class FaceRecognition(object):
             frame, small_frame = get_frame_from_camera(self.camera, self._resize_factor)
             if small_frame is None:
                 continue
-            face_location, face_encoding = get_face_encodings(small_frame)
+            face_location, face_encoding = get_faces(small_frame)
             if len(face_encoding) == 1:
                 face_encodings.append(face_encoding[0])
                 encodings_tag.append(face_tag)
@@ -183,9 +192,9 @@ class FaceRecognition(object):
                 face_recognized = False
                 frame, rgb_small_frame = get_frame_from_camera(self.camera,self._resize_factor)
                 if rgb_small_frame is None:
-                    return
+                    continue
                 # Find all the faces and face encodings in the current frame of video
-                face_locations, face_encodings = get_face_encodings(rgb_small_frame)
+                face_locations, face_encodings = get_faces(rgb_small_frame)
                 for face_encoding in face_encodings:
                     # See if the face is a match for the known face(s)
                     face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
@@ -221,9 +230,29 @@ class FaceRecognition(object):
                     cv2.waitKey(1)
             process_this_frame = not process_this_frame
 
+    def _tracker_loop(self):
+        tracker = Tracker(self.camera)
+        while self._running:
+            frame, rgb_small_frame = get_frame_from_camera(self.camera, self._resize_factor)
+            if rgb_small_frame is None:
+                continue
+            # Find faces in the current frame of video
+            face_locations, face_encodings = get_faces(rgb_small_frame)
+            if face_locations:
+                top, right, bottom, left = face_locations[0]
+                center_y = top + ((bottom - top) / 2)
+                center_x = left + ((right - left) / 2)
+                tracker.center_object((center_x, center_y))
+
+    def _close_thread(self, thread):
+        if thread is not None:
+            thread.join()
+            thread = None
+
     def close(self):
         self._running = False
-        self._recognizer_thread.join()
+        self._close_thread(self._recognizer_thread)
+        self._close_thread(self._tracker_thread)
         if self._face_animator is None:
             cv2.destroyWindow(WINDOW_NAME)
 
