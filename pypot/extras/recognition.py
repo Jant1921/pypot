@@ -53,6 +53,12 @@ def load_trained_model(file_path):
         return [], []
 
 
+def close_thread(thread):
+    if thread is not None:
+        thread.join()
+        thread = None
+
+
 class FaceRecognition(object):
     """FaceRecognition class allows to create a dataset of faces,
     generate a file as result of the training and recognize faces"""
@@ -140,7 +146,7 @@ class FaceRecognition(object):
                 sample_number = sample_number + 1
                 cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             cv2.imshow(WINDOW_NAME, frame)
-            cv2.waitKey(1)
+            cv2.waitKey(0)
         cv2.destroyAllWindows()
         save_trained_model(self._encodings_file_path, face_encodings, encodings_tag)
 
@@ -244,15 +250,10 @@ class FaceRecognition(object):
                 center_x = left + ((right - left) / 2)
                 tracker.center_object((center_x, center_y))
 
-    def _close_thread(self, thread):
-        if thread is not None:
-            thread.join()
-            thread = None
-
     def close(self):
         self._running = False
-        self._close_thread(self._recognizer_thread)
-        self._close_thread(self._tracker_thread)
+        close_thread(self._recognizer_thread)
+        close_thread(self._tracker_thread)
         if self._face_animator is None:
             cv2.destroyWindow(WINDOW_NAME)
 
