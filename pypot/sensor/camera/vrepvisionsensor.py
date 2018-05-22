@@ -13,21 +13,22 @@ class VrepVisionSensor(AbstractCamera):
         except:
             raise Exception('Can not load ' + name + ' from V-REP')
         self._res, image = vrep_io.get_vision_sensor_image(vision_sensor_handler, False)
-
-        def get_vision_sensor_image():
-            vrep_io.enable_syncronous_mode(True)
-            vrep_image = vrep_io.get_vision_sensor_image(vision_sensor_handler)
-            vrep_io.enable_syncronous_mode(False)
-            return vrep_image
+        self._vrep_io = vrep_io
+        self._vision_sensor_handler = vision_sensor_handler
         self._last_frame = None
-        self._grab = get_vision_sensor_image
         AbstractCamera.__init__(self, name, self._res, fps)
+
+    def _get_image_from_vrep(self):
+        self._vrep_io.enable_syncronous_mode(True)
+        vrep_image = self._vrep_io.get_vision_sensor_image(self._vision_sensor_handler)
+        self._vrep_io.enable_syncronous_mode(False)
+        return vrep_image
 
     def grab(self):
         """v-rep image grab
         :returns formatted image as array of BGR values
         """
-        self._res, image = self._grab()
+        self._res, image = self._get_image_from_vrep()
         if image is None:
             return self._last_frame
         image = np.array(image, dtype=np.uint8)

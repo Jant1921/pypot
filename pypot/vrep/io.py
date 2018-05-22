@@ -234,7 +234,15 @@ class VrepIO(AbstractIO):
     def get_vision_sensor_image(self, vision_sensor_handler, buffer=True):
         """ Gets the resolution of the image and the image from a vision sensor"""
         mode = vrep_mode['buffer'] if buffer else vrep_mode['streaming']
-        return_code, resolution, image = remote_api.simxGetVisionSensorImage(self.client_id, vision_sensor_handler, 0, mode)
+        try:
+            return_code, resolution, image = remote_api.simxGetVisionSensorImage(self.client_id,
+                                                                                 vision_sensor_handler,
+                                                                                 0,
+                                                                                 mode)
+        except MemoryError:
+            import gc
+            gc.collect()
+            return None, None
         if return_code is 0:
             return resolution, image
         else:
