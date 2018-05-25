@@ -53,6 +53,8 @@ class AbstractCamera(Sensor):
         :return: filtered image array
         """
         image = self.frame
+        if image is None:
+            return None
         lower = np.array(lower_hsv_range, dtype=np.uint8)
         upper = np.array(upper_hsv_range, dtype=np.uint8)
         mask = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -111,6 +113,9 @@ class AbstractCamera(Sensor):
                 threshold_limits = default_threshold_limits
         else:
             threshold_limits = default_threshold_limits
+
+        if image is None:
+            return None, None
 
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray_image, (gaussian_filter_size, gaussian_filter_size), 0)
