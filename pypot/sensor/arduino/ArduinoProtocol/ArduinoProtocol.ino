@@ -1,4 +1,45 @@
+
+
+#include "SoftwareSerial.h"
+#include "DFRobotDFPlayerMini.h"
 #include "capacitive.h"
+
+class Microfono
+{
+    //Class Member Variables
+    //These are initialized at startup
+    unsigned short sample;
+    byte mic; //the number of the microphone pin
+
+    //Constructor - creates a Microfono and initializes
+    //the member variables
+    public:
+    Microfono (byte pin)
+    {
+      mic = pin;
+    }
+    
+    unsigned short Listen()
+    {
+      //check to see the levels of sound
+      sample = analogRead(mic);
+      return sample; 
+    }
+};
+
+
+SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
+// Microphones
+unsigned short peakToPeak[2];   // peak-to-peak level for microphone
+unsigned short signalMax_1 = 0x00;
+unsigned short signalMin_1 = 1024;
+unsigned short signalMax_2 = 0x00;
+unsigned short signalMin_2 = 1024;
+unsigned short state[] = {0 , 0};
+Microfono mic1(0);
+Microfono mic2(1);
+  
 // Capacitive sensors
 Capacitive capacitive1(4);
 Capacitive capacitive2(6);
@@ -67,8 +108,10 @@ bool inputHeaderFound = false;
 bool isHeader = false;
 uint8_t trackLengthBytes[TRACK_LENGTH_DATA_SIZE];
 uint8_t motorPositionBytes[MOTOR_POSITION_DATA_SIZE];
-uint8_t trackNumber = 0x00;
-uint8_t trackLength = 0x0000;
+uint8_t trackNumber = 0x01;
+unsigned long trackLength = 0x0005;
+unsigned long trackTimer = 0x00;
+bool playTrack = false;
 uint8_t motor1Direction = 0x00;
 uint8_t motor2Direction = 0x00;
 uint8_t motor1Position = 0x00000000;
@@ -181,8 +224,10 @@ void processData(uint8_t pMessageType, uint8_t pMessageData[]){
       trackLengthBytes[0] = pMessageData[1];
       trackLengthBytes[1] = pMessageData[2];
       trackNumber = pMessageData[0];
-      trackLength = parseBytesToNumber(trackLengthBytes, TRACK_LENGTH_DATA_SIZE);
-      // play function
+      trackLength = parseBytesToNumber(trackLengthBytes, TRACK_LENGTH_DATA_SIZE) * 1000;
+      myDFPlayer.play(trackNumber);
+      trackTimer = millis();
+      playTrack = true;
       digitalWrite(ledBuiltIn, HIGH);
       messageReceived = true;
       break;
@@ -256,15 +301,15 @@ void fillStatusDataBuffer(){
   outputDataBuffer[DATA_CAPACITIVE_3] = capacitive3.getState();
   outputDataBuffer[DATA_CAPACITIVE_4] = capacitive4.getState();
   // Microphone 1 data
-  outputDataBuffer[DATA_MIC_1_0] = 0x05;
-  outputDataBuffer[DATA_MIC_1_1] = 0x06;
-  outputDataBuffer[DATA_MIC_1_2] = 0x07;
-  outputDataBuffer[DATA_MIC_1_3] = 0x08;
+  outputDataBuffer[DATA_MIC_1_0] = 0x00;
+  outputDataBuffer[DATA_MIC_1_1] = 0x00;
+  outputDataBuffer[DATA_MIC_1_2] = highByte(peakToPeak[0]);
+  outputDataBuffer[DATA_MIC_1_3] = lowByte(peakToPeak[0]);
   // Microphone 2 data
-  outputDataBuffer[DATA_MIC_2_0] = 0x09;
-  outputDataBuffer[DATA_MIC_3_1] = 0x0A;
-  outputDataBuffer[DATA_MIC_4_2] = 0x0B;
-  outputDataBuffer[DATA_MIC_5_3] = 0x0C;
+  outputDataBuffer[DATA_MIC_2_0] = 0x00;
+  outputDataBuffer[DATA_MIC_3_1] = 0x00;
+  outputDataBuffer[DATA_MIC_4_2] = highByte(peakToPeak[1]);
+  outputDataBuffer[DATA_MIC_5_3] = lowByte(peakToPeak[1]);
   // Motor 1 Position
   outputDataBuffer[DATA_MOTOR_1_0] = 0x0D;
   outputDataBuffer[DATA_MOTOR_1_1] = 0x0E;
@@ -300,7 +345,11 @@ void sendAckMessage(){
 void setup() {
   pinMode(ledBuiltIn, OUTPUT);
   while (!Serial);
+  mySoftwareSerial.begin(9600);
   Serial.begin(115200);
+  myDFPlayer.begin(mySoftwareSerial);
+  myDFPlayer.volume(1);  //Set volume value. From 0 to 30.
+  myDFPlayer.play(1);  //Play the first mp3
   outputHeaderBuffer[HEADER_START_CODE] = OUTPUT_HEADER_START_VALUE;
 }
 
@@ -312,8 +361,64 @@ void loop() {
     sendAckMessage();
   }
   if (transmitMillis - previousTransmitMillis >= transmitInterval) {
+    peakToPeak[0] = signalMax_1 - signalMin_1;  // max - min = peak-peak amplitude for microphone   
+    peakToPeak[1] = signalMax_2 - signalMin_2;  // max - min = peak-peak amplitude for microphone
+    signalMax_1 = 0x00;
+    signalMin_1 = 1024;
+    signalMax_2 = 0x00;
+    signalMin_2 = 1024;
     previousTransmitMillis = transmitMillis;
     sendStatusMessage();
     digitalWrite(ledBuiltIn, LOW);
   }
+  if(playTrack){
+    
+    if (millis() - trackTimer > trackLength) 
+    {
+      trackTimer = millis();
+      myDFPlayer.pause();
+      playTrack = false;
+    }
+  }
+  /*
+  int i = 0;
+  unsigned short signalMax_1 = 0x00;
+  unsigned short signalMin_1 = 1024;
+  unsigned short signalMax_2 = 0x00;
+  unsigned short signalMin_2 = 1024;
+  unsigned short state[] = {0 , 0};
+  */
+  /*
+  while (i < 1000)
+  {*/
+  state[0] = mic1.Listen();
+  state[1] = mic2.Listen();
+  if (state[0] < 1024)  // toss out spurious readings
+  {
+    if (state[0] > signalMax_1)
+    {
+      signalMax_1 = state[0];  // save just the max levels of microphone 1
+    }
+    else if (state[0] < signalMin_1)
+    {
+      signalMin_1 = state[0];  // save just the min levels of microphone 1
+    }
+  }
+  if (state[1] < 1024)  // toss out spurious readings
+  {
+    if (state[1] > signalMax_2)
+    {
+      signalMax_2 = state[1];  // save just the max levels of microphone 2
+    }
+    else if (state[1] < signalMin_2)
+    {
+      signalMin_2 = state[1];  // save just the min levels of microphone 2
+    }
+  }
+    /*
+    i = i + 1;
+  }
+  peakToPeak[0] = signalMax_1 - signalMin_1;  // max - min = peak-peak amplitude for microphone   
+  peakToPeak[1] = signalMax_2 - signalMin_2;  // max - min = peak-peak amplitude for microphone
+  */
 }
