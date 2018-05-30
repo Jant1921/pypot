@@ -47,7 +47,7 @@ class ImageDisplay(object):
                     cv2.imshow(WINDOW_NAME, frame)
                 else:
                     self._actual_animation_video.set(cv2.CAP_PROP_POS_FRAMES, 1)
-                cv2.waitKey(0)
+                cv2.waitKey(1)
 
     def close(self):
         self._running = False
