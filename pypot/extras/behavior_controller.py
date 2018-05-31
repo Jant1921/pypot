@@ -32,6 +32,7 @@ class BehaviorController(object):
         self._recognizer_thread = None
         self._tracker_thread = None
         self._greeting_thread = None
+
     @property
     def display(self):
         return self._display
@@ -109,36 +110,33 @@ class BehaviorController(object):
 
     def _face_found(self):
         lado = actual_robot.head_z.present_position
-        alto = actual_robot.head_y.present_position
-        original_arm_z = actual_robot.r_arm_z.present_position
-        original_shoulder_y = actual_robot.r_shoulder_y.present_position
         print 'moviendo r_arm_z to ' + str(lado)
         actual_robot.r_arm_z.goto_position(lado, 1.0, wait=True)
         actual_robot.r_shoulder_y.goto_position(0, 1.0, wait=True)
         extended_since = time()
         while time() - extended_since > 2:
             print 'waiting'
-            while self._is_capacitive_enabled():
-                print 'cap activated'
-                pass
+            if self._is_capacitive_enabled is not None:
+                while self._is_capacitive_enabled():
+                    print 'cap activated'
+                    pass
         print 'fuera'
-        actual_robot.r_arm_z.goto_position(original_arm_z, 1.0, wait=True)
-        actual_robot.r_shoulder_y.goto_position(original_shoulder_y, 1.0, wait=True)
+        actual_robot.r_arm_z.goto_position(0, 1.0, wait=True)
+        actual_robot.r_shoulder_y.goto_position(0, 1.0, wait=True)
 
     def _greeting_loop(self):
-        min_angle, max_angle = actual_robot.head_z.angle_limit
-        min_angle += 15
-        max_angle -= 15
+        min_angle = -70
+        max_angle = 70
         go_min = True
         go_max = False
         pos = 0
         amp = 2
         while self._greet:
             if go_min and pos > min_angle:
-                actual_robot.head_z.goto_position(pos, 0.1, wait=True)
+                actual_robot.head_z.goto_position(pos, 0.5, wait=True)
                 pos -= amp
             elif go_max and pos < max_angle:
-                actual_robot.head_z.goto_position(pos, 0.1, wait=True)
+                actual_robot.head_z.goto_position(pos, 0.5, wait=True)
                 pos += amp
             else:
                 go_min = not go_min
