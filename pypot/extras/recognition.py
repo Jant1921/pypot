@@ -114,7 +114,7 @@ class FaceRecognition(object):
                 sample_number = sample_number + 1
                 cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             cv2.imshow(WINDOW_NAME, frame)
-            cv2.waitKey(0)
+            cv2.waitKey(1)
         cv2.destroyAllWindows()
         save_trained_model(self._encodings_file_path, face_encodings, encodings_tag)
         self._known_face_encodings = face_encodings
