@@ -8,6 +8,7 @@ from os import path, listdir, makedirs
 import pickle
 import face_recognition
 from face_recognition.face_recognition_cli import image_files_in_folder
+from pypot import __file__ as installation_path
 
 DEFAULT_USER_PATH = path.expanduser("~")
 DEFAULT_DATASET_PATH = path.join(DEFAULT_USER_PATH, 'pypot_datasets')
@@ -69,6 +70,8 @@ class FaceRecognition(object):
         self._resize_factor = resize_factor
         # Create arrays of known face encodings and their names
         self._known_face_encodings, self._known_face_names = load_trained_model(self._encodings_file_path)
+        self._face_cascade = cv2.CascadeClassifier(
+            '{}/extras/haarcascade_frontalface_alt.xml'.format(path.dirname(installation_path)))
         check_destination_folder(self._dataset_path)
 
     @property
@@ -199,6 +202,26 @@ class FaceRecognition(object):
             cv2.waitKey(1)
         """
         return face_recognized, face_names
+
+    def face_found(self):
+        frame, rgb_small_frame = get_frame_from_camera(self.camera, self._resize_factor)
+        if rgb_small_frame is None:
+            return False
+        face_locations, face_encodings = get_faces(rgb_small_frame, get_encodings=False)
+        if face_locations:
+            return True
+        else:
+            return False
+
+    def haarcascade_face_detection(self):
+        frame = self.camera.frame
+        if frame is None:
+            return False
+        faces = self._face_cascade.detectMultiScale(frame, self._resize_factor, 2)
+        if len(faces) > 0:
+            return True
+        else:
+            return False
 
     def get_face_position(self):
         frame, rgb_small_frame = get_frame_from_camera(self.camera, self._resize_factor)

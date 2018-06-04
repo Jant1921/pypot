@@ -12,6 +12,7 @@ from ..creatures.abstractcreature import actual_robot
 if not actual_robot:
     raise AttributeError('Intitialize a robot to use the tracker')
 
+
 def close_thread(thread):
     if thread is not None:
         thread.join()
@@ -22,15 +23,13 @@ class BehaviorController(object):
     def __init__(self, camera, get_capacitive_function=None):
         self._display = None
         self._face_recognition = FaceRecognition(camera)
-        self._tracker = Tracker(camera)
         self._is_capacitive_enabled = get_capacitive_function
         self._recognizer_frequency = 0.5
         self._face_recognized = False
         self._running = False
-        self._greet = False
+        self._search = False
         # behavior threads
         self._recognizer_thread = None
-        self._tracker_thread = None
         self._greeting_thread = None
 
     @property
@@ -41,16 +40,14 @@ class BehaviorController(object):
     def face_recognition(self):
         return self._face_recognition
 
-    @property
-    def tracker(self):
-        return self._tracker
-
-    def _start_thread(self, thread, target_function, thread_name, force=False):
+    def _start_thread(self, thread, target_function, thread_name, args=None, force=False):
         if not self._running or force:
-            thread = Thread(target=target_function, name=thread_name)
+            thread = Thread(target=target_function, name=thread_name, args=args)
             thread.daemon = True
             self._running = True
             thread.start()
+
+    # DISPLAY
 
     def start_display(self, animations, default_animation):
         self._display = ImageDisplay(animations, default_animation)
@@ -59,79 +56,91 @@ class BehaviorController(object):
         if self._display is not None:
             self._display.close()
 
-    def start_tracker(self):
-        pass
-
-    def stop_tracker(self):
-        self._running = False
-        close_thread(self._tracker_thread)
-
     def change_face_animation(self, animation_name):
         if self._display is not None:
             self._display.change_animation(animation_name)
 
-    def start_recognition(self, frequency=0.5):
+    # FACE DETECTION
+
+    def start_face_detection(self, frequency=0.5, resize_factor=2, greet=False):
+        self.face_recognition._resize_factor = resize_factor
         self._recognizer_frequency = frequency
         self._start_thread(self._recognizer_thread,
-                           self._recognizer_loop,
-                           'recognition')
+                           self._face_detection_loop,
+                           'face_detection',
+                           args=(greet,))
 
-    def stop_recognition(self):
+    def stop_face_detection(self):
         self._face_recognized = False
         self._running = False
         close_thread(self._recognizer_thread)
 
-    def _recognizer_loop(self):
+    def _face_detection_loop(self, greet=False):
         # process_this_frame = True
+        # history_array_size = 2
+        # history = [False] * history_array_size
+        was_found = False
+        # i = 0
         last_frame_time = 0
         while self._running:
             if time() - last_frame_time > self._recognizer_frequency:#process_this_frame:
-                self._face_recognized, face_names = self._face_recognition.recognize_faces()
-                if self._face_recognized:
+                # print history
+                self._face_recognized = self._face_recognition.haarcascade_face_detection()
+                # history[i] = self._face_recognized
+                #if True in history:
+                if was_found or self._face_recognized:
                     self.change_face_animation('face_detected')
+                    was_found = False
                 else:
                     self.change_face_animation('idle')
+                if self._face_recognized:
+                    was_found = True
+                self._move_arm_to_front() if greet else None
                 last_frame_time = time()
+                # i += 1
+                # i = i % history_array_size
             # process_this_frame = not process_this_frame
 
-    def start_greeting(self):
+    # GREETING
+
+    def start_search(self, greet=True):
         from ..creatures.abstractcreature import actual_robot
         if not actual_robot:
-            raise AttributeError('Intitialize a robot to use greeting behavior')
-        self._greet = True
+            raise AttributeError('Intitialize a robot to use search behavior')
+        self._search = True
         self._start_thread(self._greeting_thread,
-                           self._greeting_loop,
-                           'greeting',
+                           self._search_loop,
+                           'search',
+                           args=(greet,),
                            force=True)
 
-    def stop_greeting(self):
-        self._greet = False
+    def stop_search(self):
+        self._search = False
         close_thread(self._greeting_thread)
 
-    def _face_found(self):
-        lado = actual_robot.head_z.present_position
-        print 'moviendo r_arm_z to ' + str(lado)
-        actual_robot.r_arm_z.goto_position(lado, 1.0, wait=True)
-        actual_robot.r_shoulder_y.goto_position(0, 1.0, wait=True)
-        extended_since = time()
-        while time() - extended_since > 2:
-            print 'waiting'
-            if self._is_capacitive_enabled is not None:
-                while self._is_capacitive_enabled():
-                    print 'cap activated'
-                    pass
-        print 'fuera'
-        actual_robot.r_arm_z.goto_position(0, 1.0, wait=True)
-        actual_robot.r_shoulder_y.goto_position(0, 1.0, wait=True)
+    def _move_arm_to_front(self):
+        if self._face_recognized:
+            lado = actual_robot.head_z.present_position
+            actual_robot.r_elbow_y.goto_position(0, 0.5, wait=True)
+            actual_robot.r_arm_z.goto_position(lado, 1.0, wait=True)
+            extended_since = time()
+            print ('wait')
+            while time() - extended_since < 2:
+                if self._is_capacitive_enabled is not None:
+                    while self._is_capacitive_enabled():
+                        pass
+            print ('fuera')
+            actual_robot.r_arm_z.goto_position(0.0, 0.5, wait=True)
+            actual_robot.r_elbow_y.goto_position(50.0, 1.0, wait=True)
 
-    def _greeting_loop(self):
+    def _search_loop(self, greet):
         min_angle = -70
         max_angle = 70
         go_min = True
         go_max = False
         pos = 0
         amp = 2
-        while self._greet:
+        while self._search:
             if go_min and pos > min_angle:
                 actual_robot.head_z.goto_position(pos, 0.5, wait=True)
                 pos -= amp
@@ -141,11 +150,11 @@ class BehaviorController(object):
             else:
                 go_min = not go_min
                 go_max = not go_max
-            if self._face_recognized:
-                self._face_found()
+            self._move_arm_to_front() if greet else None
+
+    # STOP THREADS
 
     def stop(self):
-        self.stop_recognition()
+        self.stop_face_detection()
         self.stop_display()
-        self.stop_tracker()
-        self.stop_greeting()
+        self.stop_search()
