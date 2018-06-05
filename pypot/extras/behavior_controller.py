@@ -2,10 +2,11 @@ from threading import Thread
 from .tracker import Tracker
 from .image_display import ImageDisplay
 from time import time
+from warnings import warn
 try:
     from .recognition import FaceRecognition
 except ImportError:
-    raise ImportError("FaceRecognition can't be imported. Missing Dependencies.")
+    warn("FaceRecognition can't be imported. Missing Dependencies.")
 
 from ..creatures.abstractcreature import actual_robot
 
@@ -22,15 +23,19 @@ def close_thread(thread):
 class BehaviorController(object):
     def __init__(self, camera, get_capacitive_function=None):
         self._display = None
-        self._face_recognition = FaceRecognition(camera)
+        self._camera = camera
+        self._face_recognition = None
+        self._tracker = None
         self._is_capacitive_enabled = get_capacitive_function
         self._recognizer_frequency = 0.5
         self._face_recognized = False
         self._running = False
         self._search = False
+        self._track_object = False
         # behavior threads
         self._recognizer_thread = None
         self._greeting_thread = None
+        self._tracker_thread = None
 
     @property
     def display(self):
@@ -55,6 +60,7 @@ class BehaviorController(object):
     def stop_display(self):
         if self._display is not None:
             self._display.close()
+            self._display = None
 
     def change_face_animation(self, animation_name):
         if self._display is not None:
@@ -63,6 +69,8 @@ class BehaviorController(object):
     # FACE DETECTION
 
     def start_face_detection(self, frequency=0.5, resize_factor=2, greet=False):
+        if self._face_recognition is None:
+            self._face_recognition = FaceRecognition(self._camera)
         self.face_recognition._resize_factor = resize_factor
         self._recognizer_frequency = frequency
         self._start_thread(self._recognizer_thread,
@@ -152,9 +160,25 @@ class BehaviorController(object):
                 go_max = not go_max
             self._move_arm_to_front() if greet else None
 
+    # TRACKER
+
+    def start_tracker(self, color, move_vertical=True):
+        if not self._running:
+            self._running = True
+            self._tracker = Tracker(self._camera)
+            self._tracker.move_vertical = move_vertical
+            self._tracker.track_object_color(color)
+
+    def stop_tracker(self, ):
+        if self._tracker is not None:
+            self._tracker.stop_tracker()
+            self._tracker = None
+            self._running = False
+
     # STOP THREADS
 
     def stop(self):
         self.stop_face_detection()
         self.stop_display()
         self.stop_search()
+        self.stop_tracker()
