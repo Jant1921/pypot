@@ -1,26 +1,21 @@
-
-
 #include "SoftwareSerial.h"
 #include "DFRobotDFPlayerMini.h"
 #include "capacitive.h"
 
-class Microfono
-{
-    //Class Member Variables
-    //These are initialized at startup
-    unsigned short sample;
-    byte mic; //the number of the microphone pin
+class Microfono {
+  //Class Member Variables
+  //These are initialized at startup
+  unsigned short sample;
+  byte mic; //the number of the microphone pin
 
-    //Constructor - creates a Microfono and initializes
-    //the member variables
-    public:
-    Microfono (byte pin)
-    {
+  //Constructor - creates a Microfono and initializes
+  //the member variables
+  public:
+    Microfono (byte pin) {
       mic = pin;
     }
     
-    unsigned short Listen()
-    {
+    unsigned short Listen() {
       //check to see the levels of sound
       sample = analogRead(mic);
       return sample; 
@@ -294,7 +289,6 @@ void verifyIncomingMessageHeader(){
 
 /* Fills the status message data buffer with sensors values */
 void fillStatusDataBuffer(){
-  // TO_DO replace with real data 
   // Capacitives Data
   outputDataBuffer[DATA_CAPACITIVE_1] = capacitive1.getState();
   outputDataBuffer[DATA_CAPACIVITE_2] = capacitive2.getState();

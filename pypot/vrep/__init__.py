@@ -167,7 +167,7 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         sys_time.sleep(0.5)
         vrep_io.close_scene()
         robot.close()
-        close_all_connections()
+        vrep_io.close()
         global vrep_session_id
         vrep_session_id = None
 
@@ -181,6 +181,7 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
     robot.reset_simulation = reset_simu
     robot.stop_and_close_simulation = stop_and_close
     robot.next_simulation_step = next_simulation_step
+    robot.vrep_client_id = vrep_io.client_id
 
     def current_simulation_time(robot):
         return robot._controllers[0].io.get_simulation_current_time()
