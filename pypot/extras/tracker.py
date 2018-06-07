@@ -24,21 +24,34 @@ class Tracker(object):
 
     def track_object_color(self, color):
         if not self._running:
-            filter_function = getattr(self.camera, 'filter_{}_objects'.format(color))
+            if type(color) is str:
+                filter_function = getattr(self.camera, 'filter_{}_objects'.format(color))
+                arguments = None
+            elif type(color) is tuple:
+                filter_function = getattr(self.camera, 'filter_objects_by_color_range')
+                arguments = color
+            else:
+                print 'nel'
+                return
             self._thread = Thread(target=self._track_color_loop,
                                   name='track_color',
-                                  args=(filter_function,))
+                                  args=(filter_function, arguments, ))
             self._thread.daemon = True
             self._running = True
             self._thread.start()
 
-    def _track_color_loop(self, filter_function):
+    def _track_color_loop(self, filter_function, args):
         while self._running:
-            img = filter_function()
-            res, values = self.camera.get_image_objects(img)
-            if values:
-                (con, centers, area) = values[0]
-                self.center_object(centers)
+            if args is None:
+                img = filter_function()
+            else:
+                low, high = args
+                img = filter_function(low, high)
+            if img is not None:
+                res, values = self.camera.get_image_objects(img)
+                if values:
+                    (con, centers, area) = values[0]
+                    self.center_object(centers)
 
     def center_object(self, (object_x, object_y)):
         x_distance = self._center_x - object_x
@@ -60,5 +73,6 @@ class Tracker(object):
 
     def stop_tracker(self):
         self._running = False
-        self._thread.join()
+        if self._thread is not None:
+            self._thread.join()
         self._thread = None

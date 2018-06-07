@@ -167,7 +167,7 @@ def from_vrep(config, vrep_host='127.0.0.1', vrep_port=19997, scene=None,
         sys_time.sleep(0.5)
         vrep_io.close_scene()
         robot.close()
-        close_all_connections()
+        vrep_io.close()
         global vrep_session_id
         vrep_session_id = None
 
