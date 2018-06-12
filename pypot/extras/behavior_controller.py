@@ -172,6 +172,8 @@ class BehaviorController(object):
                     self._arduino.send_play_sound_message(3, 2)
                 elif name == 'martin':
                     self._arduino.send_play_sound_message(9, 2)
+                elif name == 'fran':
+                    self._arduino.send_play_sound_message(2, 2)
             self._hand_free = False
             lado = actual_robot.head_z.present_position
             actual_robot.r_elbow_y.goto_position(0, 0.5, wait=True)
