@@ -1,7 +1,7 @@
 from threading import Thread
 from .tracker import Tracker
 from .image_display import ImageDisplay
-from time import time
+from time import time, sleep
 from warnings import warn
 try:
     from .recognition import FaceRecognition
@@ -129,25 +129,26 @@ class BehaviorController(object):
 
     def _move_arm_to_front(self):
         if self._face_recognized:
+            self._hand_free = False
             lado = actual_robot.head_z.present_position
             actual_robot.r_elbow_y.goto_position(0, 0.5, wait=True)
             actual_robot.r_arm_z.goto_position(lado, 1.0, wait=True)
             extended_since = time()
             print ('wait')
-            while time() - extended_since < 2:
+            while time() - extended_since < 5:
                 if self._is_capacitive_enabled is not None:
                     if self._is_capacitive_enabled():
-                        self._hand_free = False
                         for motor in actual_robot.r_arm:
                             motor.compliant = True
                     while self._is_capacitive_enabled():
                         pass
+                    sleep(1)
                     for motor in actual_robot.r_arm:
                         motor.compliant = False
-                    self._hand_free = True
             print ('fuera')
-            actual_robot.r_arm_z.goto_position(0.0, 0.5, wait=True)
-            actual_robot.r_elbow_y.goto_position(50.0, 1.0, wait=True)
+            actual_robot.r_arm_z.goto_position(0.0, 1.5, wait=True)
+            actual_robot.r_elbow_y.goto_position(50.0, 1.5, wait=True)
+            self._hand_free = True
 
     def _search_loop(self, greet):
         min_angle = -70
