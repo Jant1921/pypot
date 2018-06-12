@@ -36,6 +36,7 @@ class BehaviorController(object):
         self._recognizer_thread = None
         self._greeting_thread = None
         self._tracker_thread = None
+        self._hand_free = True
 
     @property
     def display(self):
@@ -91,7 +92,7 @@ class BehaviorController(object):
         # i = 0
         last_frame_time = 0
         while self._running:
-            if time() - last_frame_time > self._recognizer_frequency:#process_this_frame:
+            if (time() - last_frame_time > self._recognizer_frequency) and self._hand_free:#process_this_frame:
                 # print history
                 self._face_recognized = self._face_recognition.haarcascade_face_detection()
                 # history[i] = self._face_recognized
@@ -135,8 +136,15 @@ class BehaviorController(object):
             print ('wait')
             while time() - extended_since < 2:
                 if self._is_capacitive_enabled is not None:
+                    if self._is_capacitive_enabled():
+                        self._hand_free = False
+                        for motor in actual_robot.r_arm:
+                            motor.compliant = True
                     while self._is_capacitive_enabled():
                         pass
+                    for motor in actual_robot.r_arm:
+                        motor.compliant = False
+                    self._hand_free = True
             print ('fuera')
             actual_robot.r_arm_z.goto_position(0.0, 0.5, wait=True)
             actual_robot.r_elbow_y.goto_position(50.0, 1.0, wait=True)

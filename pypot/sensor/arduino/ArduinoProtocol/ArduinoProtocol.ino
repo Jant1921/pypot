@@ -23,7 +23,7 @@ class Microfono {
 };
 
 
-SoftwareSerial mySoftwareSerial(11, 16); // RX, TX
+SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 // Microphones
 unsigned short peakToPeak[2];   // peak-to-peak level for microphone
@@ -36,7 +36,7 @@ Microfono mic1(0);
 Microfono mic2(6);
   
 // Capacitive sensors
-Capacitive capacitive1(13);
+Capacitive capacitive1(3);
 Capacitive capacitive2(8);
 Capacitive capacitive3(6);
 Capacitive capacitive4(5);
@@ -342,8 +342,8 @@ void setup() {
   mySoftwareSerial.begin(9600);
   Serial.begin(115200);
   myDFPlayer.begin(mySoftwareSerial);
-  myDFPlayer.volume(10);  //Set volume value. From 0 to 30.
-  myDFPlayer.play(1);  //Play the first mp3
+  myDFPlayer.volume(30);  //Set volume value. From 0 to 30.
+  myDFPlayer.play(10);  //Play the first mp3
   outputHeaderBuffer[HEADER_START_CODE] = OUTPUT_HEADER_START_VALUE;
 }
 
