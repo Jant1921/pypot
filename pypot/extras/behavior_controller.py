@@ -21,10 +21,11 @@ def close_thread(thread):
 
 
 class BehaviorController(object):
-    def __init__(self, camera, get_capacitive_function=None):
+    def __init__(self, camera, get_capacitive_function=None, arduino=None):
         self._display = None
         self._camera = camera
         self._face_recognition = None
+        self._arduino = arduino
         self._tracker = None
         self._is_capacitive_enabled = get_capacitive_function
         self._recognizer_frequency = 0.5
@@ -141,7 +142,7 @@ class BehaviorController(object):
                     self.change_face_animation('idle')
                 if self._face_recognized:
                     was_found = True
-                self._move_arm_to_front() if greet else None
+                self._move_arm_to_front(names[0]) if greet else None
                 last_frame_time = time()
                 # i += 1
                 # i = i % history_array_size
@@ -164,8 +165,13 @@ class BehaviorController(object):
         self._search = False
         close_thread(self._greeting_thread)
 
-    def _move_arm_to_front(self):
+    def _move_arm_to_front(self, name):
         if self._face_recognized:
+            if self._arduino is not None:
+                if name == 'jose':
+                    self._arduino.send_play_sound_message(3, 2)
+                elif name == 'martin':
+                    self._arduino.send_play_sound_message(9, 2)
             self._hand_free = False
             lado = actual_robot.head_z.present_position
             actual_robot.r_elbow_y.goto_position(0, 0.5, wait=True)
