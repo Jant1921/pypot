@@ -79,6 +79,16 @@ class BehaviorController(object):
                            'face_detection',
                            args=(greet,))
 
+    def start_face_recognition(self, frequency=0.5, resize_factor=2, greet=False):
+        if self._face_recognition is None:
+            self._face_recognition = FaceRecognition(self._camera)
+        self.face_recognition._resize_factor = resize_factor
+        self._recognizer_frequency = frequency
+        self._start_thread(self._recognizer_thread,
+                           self._face_recognition_loop,
+                           'face_recognition',
+                           args=(greet,))
+
     def stop_face_detection(self):
         self._face_recognized = False
         self._running = False
@@ -95,6 +105,33 @@ class BehaviorController(object):
             if (time() - last_frame_time > self._recognizer_frequency) and self._hand_free:#process_this_frame:
                 # print history
                 self._face_recognized = self._face_recognition.haarcascade_face_detection()
+                # history[i] = self._face_recognized
+                #if True in history:
+                if was_found or self._face_recognized:
+                    self.change_face_animation('face_detected')
+                    was_found = False
+                else:
+                    self.change_face_animation('idle')
+                if self._face_recognized:
+                    was_found = True
+                self._move_arm_to_front() if greet else None
+                last_frame_time = time()
+                # i += 1
+                # i = i % history_array_size
+            # process_this_frame = not process_this_frame
+
+    def _face_recognition_loop(self, greet=False):
+        # process_this_frame = True
+        # history_array_size = 2
+        # history = [False] * history_array_size
+        was_found = False
+        # i = 0
+        last_frame_time = 0
+        while self._running:
+            if (time() - last_frame_time > self._recognizer_frequency) and self._hand_free:#process_this_frame:
+                # print history
+                self._face_recognized, names = self._face_recognition.recognize_faces()
+                print names
                 # history[i] = self._face_recognized
                 #if True in history:
                 if was_found or self._face_recognized:
