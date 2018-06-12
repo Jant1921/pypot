@@ -23,7 +23,7 @@ class Microfono {
 };
 
 
-SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
+SoftwareSerial mySoftwareSerial(11, 16); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 // Microphones
 unsigned short peakToPeak[2];   // peak-to-peak level for microphone
@@ -33,22 +33,22 @@ unsigned short signalMax_2 = 0x00;
 unsigned short signalMin_2 = 1024;
 unsigned short state[] = {0 , 0};
 Microfono mic1(0);
-Microfono mic2(1);
+Microfono mic2(6);
   
 // Capacitive sensors
-Capacitive capacitive1(4);
-Capacitive capacitive2(6);
-Capacitive capacitive3(8);
+Capacitive capacitive1(13);
+Capacitive capacitive2(8);
+Capacitive capacitive3(6);
 Capacitive capacitive4(5);
 // Header start codes
-const uint8_t OUTPUT_HEADER_START_VALUE = 0x7e;
+const uint8_t OUTPUT_HEADER_START_VALUE = 'A';
 const uint8_t INPUT_HEADER_START_VALUE = 0x7c;
 // the number of the LED pin
 const int ledBuiltIn =  LED_BUILTIN;
 // Frequency interval varaibles
 unsigned long previousTransmitMillis = 0;
 unsigned long transmitMillis = millis();
-unsigned long transmitInterval = 5000;
+unsigned long transmitInterval = 1000;
 /** Messages Codes **/
 const int STATUS_MESSAGE_CODE = 0x00;
 const int MOVE_MOTORS_MESSAGE_CODE = 0x01;
@@ -342,7 +342,7 @@ void setup() {
   mySoftwareSerial.begin(9600);
   Serial.begin(115200);
   myDFPlayer.begin(mySoftwareSerial);
-  myDFPlayer.volume(1);  //Set volume value. From 0 to 30.
+  myDFPlayer.volume(10);  //Set volume value. From 0 to 30.
   myDFPlayer.play(1);  //Play the first mp3
   outputHeaderBuffer[HEADER_START_CODE] = OUTPUT_HEADER_START_VALUE;
 }

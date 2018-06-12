@@ -167,8 +167,9 @@ class Sender(object):
 
 
 class Receiver(object):
-    def __init__(self, arduino):
+    def __init__(self, arduino, verbose):
         self.arduino = arduino
+        self._verbose = verbose
         self._input_header_buffer = []
         self._input_data_buffer = []
         self._input_header_size = 4
@@ -213,12 +214,23 @@ class Receiver(object):
         """Process the received message in function of his type"""
         if self._input_header_buffer[HEADER_MESSAGE_TYPE] == STATUS_MESSAGE_CODE:
             self._capacitives = self._input_data_buffer[:4]
-            self.__microphones = [parse_bytes_to_number(self._input_data_buffer[4:8]),
-                                  parse_bytes_to_number(self._input_data_buffer[8:12])]
+            self._microphones = [parse_bytes_to_number(self._input_data_buffer[4:8]),
+                                 parse_bytes_to_number(self._input_data_buffer[8:12])]
             self._motors_position = [parse_bytes_to_number(self._input_data_buffer[12:14]),
                                      parse_bytes_to_number(self._input_data_buffer[14:16])]
+            if self._verbose:
+                print ('--------')
+                print ('data')
+                print ('capacitives')
+                print (self._capacitives)
+                print ('microphones')
+                print (self._microphones)
+                print ('motors')
+                print (self._motors_position)
+                print ('*******')
         elif self._input_header_buffer[HEADER_MESSAGE_TYPE] == ARDUINO_ACK_MESSAGE_CODE:
-            print ('Arduino ack message')
+            if self._verbose:
+                print ('Arduino ack message')
 
     def _is_valid_data_message(self, buffer_size):
         """Gets fills data buffer to verify if it's a valid message
@@ -234,7 +246,6 @@ class Receiver(object):
                 self._input_data_buffer.append(hex_input)
                 buffer_size -= 1
         if valid_checksum(self._input_data_buffer):
-            print self._input_data_buffer
             self._process_incoming_message()
             return True
         else:
@@ -264,7 +275,8 @@ class Receiver(object):
                 self._check_header_start(hex_input)
                 self._input_header_buffer.append(hex_input)
                 if self._header_buffer_full():
-                    print self._input_header_buffer
+                    if self._verbose:
+                        print (self._input_header_buffer)
                     if (valid_checksum(self._input_header_buffer)
                             and
                             is_valid_header_message_type(self._input_header_buffer[HEADER_MESSAGE_TYPE])):
@@ -276,7 +288,7 @@ class ArduinoSensor(Sensor):
     """Class to handle the protocol communication with """
     registers = Sensor.registers + ['port', 'baud']
 
-    def __init__(self, name, port, baud):
+    def __init__(self, name, port, baud, verbose=False):
         # type: (str, int, int) -> None
         """Initializes ArduinoSensor class
         :param name: sensor name
@@ -291,13 +303,13 @@ class ArduinoSensor(Sensor):
         self._sender = None
         self._status_loop = None
         self.running = False
-        self.start()
+        self.start(verbose)
 
-    def start(self):
+    def start(self, verbose):
         """ Establishes a new serial connection to begin the receiver and sender threads"""
         self._arduino = Serial(self.port, self.baud, timeout=0.03)  # Windows
         sleep(1)  # give the connection a second to settle
-        self._receiver = Receiver(self._arduino)
+        self._receiver = Receiver(self._arduino, verbose)
         self._sender = Sender(self._arduino)
         self._status_loop = Thread(target=self._receiver.loop)
         self._status_loop.daemon = True
