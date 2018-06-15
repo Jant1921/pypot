@@ -38,6 +38,7 @@ class BehaviorController(object):
         self._greeting_thread = None
         self._tracker_thread = None
         self._hand_free = True
+        self._name = ''
 
     @property
     def display(self):
@@ -115,7 +116,7 @@ class BehaviorController(object):
                     self.change_face_animation('idle')
                 if self._face_recognized:
                     was_found = True
-                self._move_arm_to_front() if greet else None
+                self._move_arm_to_front(self._name) if greet else None
                 last_frame_time = time()
                 # i += 1
                 # i = i % history_array_size
@@ -142,7 +143,11 @@ class BehaviorController(object):
                     self.change_face_animation('idle')
                 if self._face_recognized:
                     was_found = True
-                self._move_arm_to_front(names[0]) if greet else None
+                if len(names) > 0:
+                    self._name = names[0]
+                else:
+                    self._name = ''
+                    #self._move_arm_to_front(names[0]) if greet else None
                 last_frame_time = time()
                 # i += 1
                 # i = i % history_array_size
@@ -165,7 +170,7 @@ class BehaviorController(object):
         self._search = False
         close_thread(self._greeting_thread)
 
-    def _move_arm_to_front(self, name):
+    def _move_arm_to_front(self, name=''):
         if self._face_recognized:
             if self._arduino is not None:
                 if name == 'jose':
@@ -212,7 +217,7 @@ class BehaviorController(object):
             else:
                 go_min = not go_min
                 go_max = not go_max
-            self._move_arm_to_front() if greet else None
+            self._move_arm_to_front(self._name) if greet else None
 
     # TRACKER
 
