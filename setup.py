@@ -23,7 +23,8 @@ install_requires = ['numpy',
                     'ikpy',
                     'bottle',
                     'poppy-creature>=2',  # Kept to avoid breaking old imports
-                    'requests'
+                    'requests',
+                    'imageio'
                     ]
 
 if sys.version_info < (2, 7):
