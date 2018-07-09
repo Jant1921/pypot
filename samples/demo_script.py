@@ -1,7 +1,7 @@
 
 from os.path import abspath
 from pypot.creatures import PoppyTorso
-config_path = abspath('./1cam.json')
+config_path = abspath('./cam1.json')
 
 poppy = PoppyTorso(config=config_path)
 
